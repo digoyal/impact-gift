@@ -121,7 +121,6 @@ const ManageEvent = () => {
   // Charities tab state
   const [charities, setCharities] = useState<Charity[]>([]);
   const [selectedCharityIds, setSelectedCharityIds] = useState<number[]>([]);
-  const [impactGiftEnabled, setImpactGiftEnabled] = useState(false);
 
   useEffect(() => {
     if (!slug) {
@@ -149,6 +148,19 @@ const ManageEvent = () => {
     };
     void enablePotluck();
   }, [activeTab, event?.id, slug, formData.potluck_enabled]);
+
+  useEffect(() => {
+    const enableImpactGift = async () => {
+      if (activeTab !== 'charities' || !event || !slug || event.impact_gift_enabled === true) return;
+      try {
+        await api.put(`/events/${slug}`, { impact_gift_enabled: true });
+        setEvent((prev) => (prev ? { ...prev, impact_gift_enabled: true } : prev));
+      } catch (error: unknown) {
+        console.error('Failed to enable Impact Gift:', error);
+      }
+    };
+    void enableImpactGift();
+  }, [activeTab, event?.id, slug, event?.impact_gift_enabled]);
 
   // Fetch filter counts when communication tab is active
   useEffect(() => {
@@ -189,7 +201,6 @@ const ManageEvent = () => {
       ]);
 
       setEvent(eventRes.data);
-      setImpactGiftEnabled(eventRes.data.impact_gift_enabled === true);
       setCharities(charitiesResult.data.charities);
 
       // Now fetch all event-specific data in parallel using event ID
@@ -772,8 +783,8 @@ const ManageEvent = () => {
     setSaveLoading(true);
     try {
       await api.put(`/events/${slug}`, {
-        impact_gift_enabled: impactGiftEnabled,
-        charity_ids: impactGiftEnabled ? selectedCharityIds : [],
+        impact_gift_enabled: selectedCharityIds.length > 0,
+        charity_ids: selectedCharityIds,
       });
       toast.success('Impact Gift settings saved');
       await fetchEventData();
@@ -1187,8 +1198,6 @@ const ManageEvent = () => {
 
       {activeTab === 'charities' && (
         <ImpactGiftTab
-          enabled={impactGiftEnabled}
-          onEnabledChange={setImpactGiftEnabled}
           charities={charities}
           selectedCharityIds={selectedCharityIds}
           onToggleCharity={toggleCharity}
@@ -1461,7 +1470,7 @@ const ManageEvent = () => {
           />
         ) : (
           <div className="card text-sm text-gray-600">
-            Enable Impact Gift and choose charities to track donations and send reminders.
+            Choose charities on the Impact Gift tab to track donations and send reminders.
           </div>
         )
       )}
