@@ -100,7 +100,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
             onClick={() => setShowAddModal(true)}
             className="btn btn-primary"
           >
-            + Add Suggested Item
+            + Suggest Item
           </button>
         </div>
 
@@ -254,7 +254,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
         <div className="card">
           <div className="text-center py-8">
             <p className="text-gray-500">
-              No potluck items yet. Use &ldquo;Add Suggested Item&rdquo; above to get started.
+              No potluck items yet. Use &ldquo;Suggest Item&rdquo; above to get started.
             </p>
           </div>
         </div>
@@ -265,7 +265,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Add Suggested Item</h3>
+              <h3 className="text-xl font-bold">Suggest Item</h3>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -351,7 +351,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
                   disabled={submitting}
                   className="btn btn-primary flex-1"
                 >
-                  {submitting ? 'Adding...' : 'Add Item'}
+                  {submitting ? 'Saving...' : 'Suggest Item'}
                 </button>
                 <button
                   type="button"
