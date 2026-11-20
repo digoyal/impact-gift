@@ -11,6 +11,7 @@ import CoHostsTab from '../components/manage-event/CoHostsTab';
 import RSVPTab from '../components/manage-event/RSVPTab';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import ProgressTab from '../components/manage-event/ProgressTab';
+import AdditionalGuestsControl from '../components/manage-event/AdditionalGuestsControl';
 import EventImageSelector from '../components/EventImageSelector';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { isImpactGiftEnabled } from '../utils/impactGift';
@@ -71,6 +72,8 @@ const ManageEvent = () => {
   const [editingGuestId, setEditingGuestId] = useState<number | null>(null);
   const [editEmail, setEditEmail] = useState('');
   const [editName, setEditName] = useState('');
+  const [editAdditionalGuests, setEditAdditionalGuests] = useState(0);
+  const [additionalGuestsSavingId, setAdditionalGuestsSavingId] = useState<number | null>(null);
 
   // Communication tab state
   const [updateMessage, setUpdateMessage] = useState('');
@@ -548,25 +551,64 @@ const ManageEvent = () => {
     setEditingGuestId(guest.id);
     setEditEmail(guest.email);
     setEditName(guest.name || '');
+    setEditAdditionalGuests(guest.additional_guests ?? 0);
   };
 
   const cancelEdit = () => {
     setEditingGuestId(null);
     setEditEmail('');
     setEditName('');
+    setEditAdditionalGuests(0);
+  };
+
+  const refreshRsvpSummary = async () => {
+    if (!event) return;
+    try {
+      const rsvpSummaryRes = await api.get<RSVPSummaryResponse>(`/guests/event/${event.id}/rsvp-summary`);
+      setRsvpSummary(rsvpSummaryRes.data);
+    } catch {
+      // Non-blocking; list already updated
+    }
+  };
+
+  const updateGuestAdditionalGuests = async (guestId: number, additionalGuests: number) => {
+    if (!event) return;
+    const guest = guests.find((g) => g.id === guestId);
+    const owner =
+      getEventOwnerEmail(event) ??
+      (event.user_role === 'owner' ? user?.email?.toLowerCase() ?? null : null);
+    if (guest && isOrganizerGuest(guest, owner)) {
+      return;
+    }
+
+    setAdditionalGuestsSavingId(guestId);
+    try {
+      const response = await api.put(`/guests/${guestId}`, { additional_guests: additionalGuests });
+      setGuests((prev) => prev.map((g) => (g.id === guestId ? response.data : g)));
+      await refreshRsvpSummary();
+    } catch (error: unknown) {
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      const errorMsg = (data?.error as string) || 'Failed to update additional guests';
+      toast.error(errorMsg);
+    } finally {
+      setAdditionalGuestsSavingId(null);
+    }
   };
 
   const updateGuest = async (guestId: number) => {
     try {
       const response = await api.put(`/guests/${guestId}`, {
         email: editEmail,
-        name: editName || undefined
+        name: editName || undefined,
+        additional_guests: editAdditionalGuests,
       });
 
       setGuests(guests.map(g => g.id === guestId ? response.data : g));
       setEditingGuestId(null);
       setEditEmail('');
       setEditName('');
+      setEditAdditionalGuests(0);
+      await refreshRsvpSummary();
       toast.success('Guest updated successfully!');
     } catch (error: unknown) {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
@@ -1355,13 +1397,11 @@ const ManageEvent = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                            {guest.rsvp_status === 'attending' || guest.rsvp_status === 'maybe' ? (
-                              <span className="font-medium text-primary-600">
-                                {guest.additional_guests || 0 > 0 ? `+${guest.additional_guests}` : '-'}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
+                            <AdditionalGuestsControl
+                              value={editAdditionalGuests}
+                              saving={additionalGuestsSavingId === guest.id}
+                              onChange={setEditAdditionalGuests}
+                            />
                           </td>
                           {impactGiftOn && (
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -1414,13 +1454,12 @@ const ManageEvent = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                            {guest.rsvp_status === 'attending' || guest.rsvp_status === 'maybe' ? (
-                              <span className="font-medium text-primary-600">
-                                {guest.additional_guests || 0 > 0 ? `+${guest.additional_guests}` : '-'}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
+                            <AdditionalGuestsControl
+                              value={guest.additional_guests ?? 0}
+                              disabled={organizer}
+                              saving={additionalGuestsSavingId === guest.id}
+                              onChange={(next) => updateGuestAdditionalGuests(guest.id, next)}
+                            />
                           </td>
                           {impactGiftOn && (
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -1495,6 +1534,14 @@ const ManageEvent = () => {
                               placeholder="Name"
                             />
                           </div>
+                          <div>
+                            <label className="label text-xs">Additional guests</label>
+                            <AdditionalGuestsControl
+                              value={editAdditionalGuests}
+                              saving={additionalGuestsSavingId === guest.id}
+                              onChange={setEditAdditionalGuests}
+                            />
+                          </div>
                           <div className="flex gap-2 pt-2">
                             <button
                               onClick={() => updateGuest(guest.id)}
@@ -1536,13 +1583,14 @@ const ManageEvent = () => {
                                 {guest.rsvp_status === 'no_response' && 'No Response'}
                               </div>
                             </div>
-                            <div>
-                              <div className="text-xs text-neutral-500 mb-1">Additional Guests</div>
-                              <div className="font-medium text-primary-600">
-                                {guest.rsvp_status === 'attending' || guest.rsvp_status === 'maybe' ? (
-                                  guest.additional_guests || 0 > 0 ? `+${guest.additional_guests}` : '-'
-                                ) : '-'}
-                              </div>
+                            <div className="col-span-2">
+                              <div className="text-xs text-neutral-500 mb-1">Additional guests (plus-ones)</div>
+                              <AdditionalGuestsControl
+                                value={guest.additional_guests ?? 0}
+                                disabled={organizer}
+                                saving={additionalGuestsSavingId === guest.id}
+                                onChange={(next) => updateGuestAdditionalGuests(guest.id, next)}
+                              />
                             </div>
                             {impactGiftOn && (
                               <div>

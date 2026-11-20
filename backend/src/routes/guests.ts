@@ -231,7 +231,11 @@ router.put(
   authenticate,
   [
     body('name').optional().trim(),
-    body('email').optional().isEmail().normalizeEmail()
+    body('email').optional().isEmail().normalizeEmail(),
+    body('additional_guests')
+      .optional()
+      .isInt({ min: 0, max: 20 })
+      .withMessage('Additional guests must be between 0 and 20'),
   ],
   async (req: AuthRequest, res: Response) => {
     try {
@@ -241,11 +245,13 @@ router.put(
       }
 
       const { guestId } = req.params;
-      const { name, email } = req.body;
+      const { name, email, additional_guests } = req.body;
+
+      const hasAdditionalGuests = additional_guests !== undefined && additional_guests !== null;
 
       // At least one field must be provided
-      if (!name && !email) {
-        return res.status(400).json({ error: 'At least one field (name or email) must be provided' });
+      if (name === undefined && email === undefined && !hasAdditionalGuests) {
+        return res.status(400).json({ error: 'At least one field (name, email, or additional_guests) must be provided' });
       }
 
       // Verify the user is owner or accepted co-host for this guest's event
@@ -294,6 +300,12 @@ router.put(
       if (email !== undefined) {
         updates.push(`email = $${paramCount}`);
         values.push(email);
+        paramCount++;
+      }
+
+      if (hasAdditionalGuests) {
+        updates.push(`additional_guests = $${paramCount}`);
+        values.push(additional_guests);
         paramCount++;
       }
 

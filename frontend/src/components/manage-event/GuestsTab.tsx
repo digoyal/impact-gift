@@ -1,6 +1,9 @@
 import { Guest } from '../../types';
+import { isOrganizerGuest } from '../../utils/eventOrganizerGuest';
+import AdditionalGuestsControl from './AdditionalGuestsControl';
 
 interface GuestsTabProps {
+  ownerEmail: string | null;
   guests: Guest[];
   guestEmail: string;
   guestName: string;
@@ -22,9 +25,14 @@ interface GuestsTabProps {
   onStartEdit: (guest: Guest) => void;
   onUpdateGuest: (guestId: number) => void;
   onCancelEdit: () => void;
+  editAdditionalGuests: number;
+  onEditAdditionalGuestsChange: (value: number) => void;
+  onUpdateAdditionalGuests: (guestId: number, value: number) => void;
+  additionalGuestsSavingId: number | null;
 }
 
 const GuestsTab = ({
+  ownerEmail,
   guests,
   guestEmail,
   guestName,
@@ -45,7 +53,11 @@ const GuestsTab = ({
   onEditNameChange,
   onStartEdit,
   onUpdateGuest,
-  onCancelEdit
+  onCancelEdit,
+  editAdditionalGuests,
+  onEditAdditionalGuestsChange,
+  onUpdateAdditionalGuests,
+  additionalGuestsSavingId,
 }: GuestsTabProps) => {
   return (
     <div className="space-y-6">
@@ -147,8 +159,9 @@ const GuestsTab = ({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {guests.map((guest) => (
-                  editingGuestId === guest.id ? (
+                {guests.map((guest) => {
+                  const organizer = isOrganizerGuest(guest, ownerEmail);
+                  return editingGuestId === guest.id ? (
                     // Edit mode
                     <tr key={guest.id} className="bg-primary-50">
                       <td className="px-6 py-4">
@@ -192,13 +205,11 @@ const GuestsTab = ({
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                        {guest.rsvp_status === 'attending' || guest.rsvp_status === 'maybe' ? (
-                          <span className="font-medium text-primary-600">
-                            {guest.additional_guests || 0 > 0 ? `+${guest.additional_guests}` : '-'}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                        <AdditionalGuestsControl
+                          value={editAdditionalGuests}
+                          saving={additionalGuestsSavingId === guest.id}
+                          onChange={onEditAdditionalGuestsChange}
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {guest.has_donated ? (
@@ -224,7 +235,7 @@ const GuestsTab = ({
                     </tr>
                   ) : (
                     // View mode
-                    <tr key={guest.id}>
+                    <tr key={guest.id} className={organizer ? 'bg-neutral-50' : undefined}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{guest.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{guest.name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -257,13 +268,12 @@ const GuestsTab = ({
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                        {guest.rsvp_status === 'attending' || guest.rsvp_status === 'maybe' ? (
-                          <span className="font-medium text-primary-600">
-                            {guest.additional_guests || 0 > 0 ? `+${guest.additional_guests}` : '-'}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                        <AdditionalGuestsControl
+                          value={guest.additional_guests ?? 0}
+                          disabled={organizer}
+                          saving={additionalGuestsSavingId === guest.id}
+                          onChange={(next) => onUpdateAdditionalGuests(guest.id, next)}
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {guest.has_donated ? (
@@ -273,7 +283,7 @@ const GuestsTab = ({
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
-                        {guest.invitation_sent && (
+                        {!organizer && guest.invitation_sent && (
                           <button
                             onClick={() => onResendInvitation(guest.id)}
                             className="text-primary-600 hover:text-primary-800"
@@ -282,22 +292,26 @@ const GuestsTab = ({
                             Resend
                           </button>
                         )}
-                        <button
-                          onClick={() => onStartEdit(guest)}
-                          className="text-primary-600 hover:text-primary-800"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => onRemoveGuest(guest.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Remove
-                        </button>
+                        {!organizer && (
+                          <>
+                            <button
+                              onClick={() => onStartEdit(guest)}
+                              className="text-primary-600 hover:text-primary-800"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => onRemoveGuest(guest.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
-                  )
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
