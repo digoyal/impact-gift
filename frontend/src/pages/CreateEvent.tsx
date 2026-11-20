@@ -25,7 +25,6 @@ const CreateEvent = () => {
     end_time: '',
     venue_name: '',
     address: '',
-    virtual_link: '',
     host_name: '',
     host_phone: '',
     rsvp_deadline: '',
@@ -254,23 +253,6 @@ const CreateEvent = () => {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 />
-              </div>
-
-              <div>
-                <label htmlFor="virtual_link" className="block text-sm font-medium text-gray-700 mb-1">
-                  Virtual Event Link (Optional)
-                </label>
-                <input
-                  id="virtual_link"
-                  type="url"
-                  className="input"
-                  placeholder="https://zoom.us/j/123456789"
-                  value={formData.virtual_link}
-                  onChange={(e) => setFormData({ ...formData, virtual_link: e.target.value })}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  For virtual events, add your Zoom, Google Meet, or other video link
-                </p>
               </div>
 
             </div>

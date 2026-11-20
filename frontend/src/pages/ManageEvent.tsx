@@ -87,7 +87,6 @@ const ManageEvent = () => {
     end_time: '',
     venue_name: '',
     address: '',
-    virtual_link: '',
     host_name: '',
     host_phone: '',
     rsvp_deadline: '',
@@ -201,7 +200,6 @@ const ManageEvent = () => {
         end_time: eventRes.data.end_time || '',
         venue_name: eventRes.data.venue_name || '',
         address: eventRes.data.address || '',
-        virtual_link: eventRes.data.virtual_link || '',
         host_name: eventRes.data.host_name || '',
         host_phone: eventRes.data.host_phone || '',
         rsvp_deadline: eventRes.data.rsvp_deadline ? eventRes.data.rsvp_deadline.split('T')[0] : '',
@@ -954,23 +952,6 @@ const ManageEvent = () => {
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 />
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="virtual_link" className="block text-sm font-medium text-gray-700 mb-1">
-                Virtual Event Link (Optional)
-              </label>
-              <input
-                id="virtual_link"
-                type="url"
-                className="input"
-                placeholder="https://zoom.us/j/123456789"
-                value={formData.virtual_link}
-                onChange={(e) => setFormData({ ...formData, virtual_link: e.target.value })}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                For virtual events, add your Zoom, Google Meet, or other video link
-              </p>
             </div>
 
             {/* Host Info */}

@@ -11,7 +11,6 @@ interface FormData {
   end_time: string;
   venue_name: string;
   address: string;
-  virtual_link: string;
   host_name: string;
   host_phone: string;
   rsvp_deadline: string;
@@ -171,23 +170,6 @@ const DetailsTab = ({
               onChange={handleChange('address')}
             />
           </div>
-        </div>
-
-        <div>
-          <label htmlFor="virtual_link" className="block text-sm font-medium text-gray-700 mb-1">
-            Virtual Event Link (Optional)
-          </label>
-          <input
-            id="virtual_link"
-            type="url"
-            className="input"
-            placeholder="https://zoom.us/j/123456789"
-            value={formData.virtual_link}
-            onChange={handleChange('virtual_link')}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            For virtual events, add your Zoom, Google Meet, or other video link
-          </p>
         </div>
 
         {/* Host Info */}
