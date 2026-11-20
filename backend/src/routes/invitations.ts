@@ -73,7 +73,13 @@ View your invitation: {{EVENT_LINK}}`;
 
       // Get guests who haven't been sent an invitation yet
       const guestsResult = await query(
-        'SELECT * FROM guests WHERE event_id = $1 AND invitation_sent = false',
+        `SELECT g.*
+         FROM guests g
+         JOIN events e ON g.event_id = e.id
+         JOIN users u ON e.user_id = u.id
+         WHERE g.event_id = $1
+           AND g.invitation_sent = false
+           AND LOWER(g.email) <> LOWER(u.email)`,
         [event_id]
       );
 

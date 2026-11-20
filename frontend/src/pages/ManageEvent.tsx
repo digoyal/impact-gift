@@ -14,11 +14,18 @@ import EventImageSelector from '../components/EventImageSelector';
 import EventPhotosUploader from '../components/EventPhotosUploader';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { isImpactGiftEnabled } from '../utils/impactGift';
+import {
+  getEventOwnerEmail,
+  isOrganizerGuest,
+  isInvitableGuest,
+} from '../utils/eventOrganizerGuest';
+import { useAuth } from '../contexts/AuthContext';
 
 const ManageEvent = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [event, setEvent] = useState<Event | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
@@ -488,6 +495,15 @@ const ManageEvent = () => {
   };
 
   const removeGuest = async (guestId: number) => {
+    const guest = guests.find((g) => g.id === guestId);
+    const ownerEmail =
+      getEventOwnerEmail(event) ??
+      (event?.user_role === 'owner' ? user?.email?.toLowerCase() ?? null : null);
+    if (guest && isOrganizerGuest(guest, ownerEmail)) {
+      toast.error('The event host cannot be removed from the guest list');
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to remove this guest?')) return;
 
     try {
@@ -518,6 +534,13 @@ const ManageEvent = () => {
   };
 
   const startEditGuest = (guest: Guest) => {
+    const ownerEmail =
+      getEventOwnerEmail(event) ??
+      (event?.user_role === 'owner' ? user?.email?.toLowerCase() ?? null : null);
+    if (isOrganizerGuest(guest, ownerEmail)) {
+      toast.error('The event host cannot be edited here');
+      return;
+    }
     setEditingGuestId(guest.id);
     setEditEmail(guest.email);
     setEditName(guest.name || '');
@@ -551,7 +574,10 @@ const ManageEvent = () => {
   const sendInvitations = async () => {
     if (!event) return;
 
-    const pendingGuests = guests.filter(g => !g.invitation_sent);
+    const ownerEmail =
+      getEventOwnerEmail(event) ??
+      (event.user_role === 'owner' ? user?.email?.toLowerCase() ?? null : null);
+    const pendingGuests = guests.filter((g) => isInvitableGuest(g, ownerEmail));
     if (pendingGuests.length === 0) {
       toast.error('No pending invitations to send');
       return;
@@ -722,10 +748,45 @@ const ManageEvent = () => {
   }
 
 
-  const pendingInvites = guests.filter(g => !g.invitation_sent).length;
+  const ownerEmail =
+    getEventOwnerEmail(event) ??
+    (event.user_role === 'owner' ? user?.email?.toLowerCase() ?? null : null);
+  const pendingInvites = guests.filter((g) => isInvitableGuest(g, ownerEmail)).length;
+  const displayGuests = [...guests].sort((a, b) => {
+    const aHost = isOrganizerGuest(a, ownerEmail);
+    const bHost = isOrganizerGuest(b, ownerEmail);
+    if (aHost !== bHost) return aHost ? -1 : 1;
+    return 0;
+  });
   const totalDonations = donations.reduce((sum, d) => sum + Number(d.amount), 0);
   const attendingCount = guests.filter(g => g.rsvp_status === 'attending').length;
   const impactGiftOn = isImpactGiftEnabled(event);
+
+  const renderInviteStatusBadge = (guest: Guest, mobile = false) => {
+    if (isOrganizerGuest(guest, ownerEmail)) {
+      return mobile ? (
+        <span className="badge badge-primary flex-shrink-0">Host</span>
+      ) : (
+        <span className="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800">Host</span>
+      );
+    }
+    if (mobile) {
+      return (
+        <span className={`badge ${guest.invitation_sent ? 'badge-success' : 'badge-warning'} flex-shrink-0`}>
+          {guest.invitation_sent ? 'Invited' : 'Pending'}
+        </span>
+      );
+    }
+    return (
+      <span
+        className={`px-2 py-1 text-xs rounded-full ${
+          guest.invitation_sent ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+        }`}
+      >
+        {guest.invitation_sent ? 'Invited' : 'Pending'}
+      </span>
+    );
+  };
   const manageTabs: TabType[] = impactGiftOn
     ? ['details', 'charities', 'guests', 'rsvp', 'communication', 'cohosts', 'potluck', 'progress']
     : ['details', 'guests', 'rsvp', 'communication', 'cohosts', 'potluck'];
@@ -1279,8 +1340,9 @@ const ManageEvent = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {guests.map((guest) => (
-                      editingGuestId === guest.id ? (
+                    {displayGuests.map((guest) => {
+                      const organizer = isOrganizerGuest(guest, ownerEmail);
+                      return editingGuestId === guest.id ? (
                         // Edit mode
                         <tr key={guest.id} className="bg-primary-50">
                           <td className="px-6 py-4">
@@ -1301,15 +1363,7 @@ const ManageEvent = () => {
                               placeholder="Name"
                             />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              guest.invitation_sent
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {guest.invitation_sent ? 'Invited' : 'Pending'}
-                            </span>
-                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">{renderInviteStatusBadge(guest)}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <span className={`text-xs ${
                               guest.rsvp_status === 'attending' ? 'text-green-600' :
@@ -1356,18 +1410,10 @@ const ManageEvent = () => {
                         </tr>
                       ) : (
                         // View mode
-                        <tr key={guest.id}>
+                        <tr key={guest.id} className={organizer ? 'bg-neutral-50' : undefined}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">{guest.email}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">{guest.name || '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              guest.invitation_sent
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {guest.invitation_sent ? 'Invited' : 'Pending'}
-                            </span>
-                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">{renderInviteStatusBadge(guest)}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <div className="flex flex-col">
                               <span className={`text-xs font-medium ${
@@ -1405,7 +1451,7 @@ const ManageEvent = () => {
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
-                            {guest.invitation_sent && (
+                            {!organizer && guest.invitation_sent && (
                               <button
                                 onClick={() => resendInvitation(guest.id)}
                                 className="text-primary-600 hover:text-primary-800"
@@ -1414,30 +1460,36 @@ const ManageEvent = () => {
                                 Resend
                               </button>
                             )}
-                            <button
-                              onClick={() => startEditGuest(guest)}
-                              className="text-primary-600 hover:text-primary-800"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => removeGuest(guest.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              Remove
-                            </button>
+                            {!organizer && (
+                              <>
+                                <button
+                                  onClick={() => startEditGuest(guest)}
+                                  className="text-primary-600 hover:text-primary-800"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => removeGuest(guest.id)}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  Remove
+                                </button>
+                              </>
+                            )}
                           </td>
                         </tr>
-                      )
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               {/* Mobile Cards - visible only on mobile */}
               <div className="md:hidden space-y-4">
-                {guests.map((guest) => (
-                  <div key={guest.id} className={`card-interactive ${editingGuestId === guest.id ? 'ring-2 ring-primary-500' : ''}`}>
+                {displayGuests.map((guest) => {
+                  const organizer = isOrganizerGuest(guest, ownerEmail);
+                  return (
+                  <div key={guest.id} className={`card-interactive ${editingGuestId === guest.id ? 'ring-2 ring-primary-500' : ''} ${organizer ? 'border-primary-200 bg-neutral-50' : ''}`}>
                     <div className="space-y-3">
                       {editingGuestId === guest.id ? (
                         /* Edit mode */
@@ -1485,13 +1537,7 @@ const ManageEvent = () => {
                               <div className="font-medium text-neutral-900 truncate">{guest.email}</div>
                               <div className="text-sm text-neutral-600">{guest.name || 'No name'}</div>
                             </div>
-                            <span className={`badge ${
-                              guest.invitation_sent
-                                ? 'badge-success'
-                                : 'badge-warning'
-                            } flex-shrink-0`}>
-                              {guest.invitation_sent ? 'Invited' : 'Pending'}
-                            </span>
+                            {renderInviteStatusBadge(guest, true)}
                           </div>
 
                           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -1535,33 +1581,36 @@ const ManageEvent = () => {
                             </div>
                           )}
 
-                          <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-200">
-                            {guest.invitation_sent && (
+                          {!organizer && (
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-200">
+                              {guest.invitation_sent && (
+                                <button
+                                  onClick={() => resendInvitation(guest.id)}
+                                  className="btn btn-secondary btn-sm flex-1"
+                                >
+                                  Resend
+                                </button>
+                              )}
                               <button
-                                onClick={() => resendInvitation(guest.id)}
+                                onClick={() => startEditGuest(guest)}
                                 className="btn btn-secondary btn-sm flex-1"
                               >
-                                Resend
+                                Edit
                               </button>
-                            )}
-                            <button
-                              onClick={() => startEditGuest(guest)}
-                              className="btn btn-secondary btn-sm flex-1"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => removeGuest(guest.id)}
-                              className="btn btn-secondary btn-sm text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              Remove
-                            </button>
-                          </div>
+                              <button
+                                onClick={() => removeGuest(guest.id)}
+                                className="btn btn-secondary btn-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               </>
             )}

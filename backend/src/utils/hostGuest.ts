@@ -13,9 +13,12 @@ export async function insertCreatorAsAttendingGuest(
     null;
 
   await query(
-    `INSERT INTO guests (event_id, email, name, rsvp_status, rsvp_at)
-     VALUES ($1, $2, $3, 'attending', CURRENT_TIMESTAMP)
-     ON CONFLICT (event_id, email) DO NOTHING`,
+    `INSERT INTO guests (event_id, email, name, rsvp_status, rsvp_at, invitation_sent, invitation_sent_at)
+     VALUES ($1, $2, $3, 'attending', CURRENT_TIMESTAMP, true, CURRENT_TIMESTAMP)
+     ON CONFLICT (event_id, email) DO UPDATE SET
+       rsvp_status = 'attending',
+       invitation_sent = true,
+       invitation_sent_at = COALESCE(guests.invitation_sent_at, CURRENT_TIMESTAMP)`,
     [eventId, user.email.toLowerCase(), name]
   );
 }

@@ -323,14 +323,14 @@ router.get('/:slug', async (req: Request | AuthRequest, res: Response) => {
     // Get basic event info with optimized single query
     console.log(`[GET /:slug] Querying database for slug=${slug}, userId=${authenticatedUserId}`);
     const eventResult = await query(
-      `SELECT e.*, u.first_name, u.last_name,
+      `SELECT e.*, u.first_name, u.last_name, u.email as owner_email,
               COALESCE(SUM(d.amount), 0) as total_raised,
               COUNT(DISTINCT d.id) as donation_count
        FROM events e
        JOIN users u ON e.user_id = u.id
        LEFT JOIN donations d ON e.id = d.event_id AND d.status IN ('completed', 'committed')
        WHERE e.slug = $1 AND (e.is_active = true OR e.user_id = $2)
-       GROUP BY e.id, u.first_name, u.last_name`,
+       GROUP BY e.id, u.first_name, u.last_name, u.email`,
       [slug, authenticatedUserId]
     );
 

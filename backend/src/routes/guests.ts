@@ -340,6 +340,17 @@ router.delete('/:guestId', authenticate, async (req: AuthRequest, res: Response)
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    const ownerEmail = await query(
+      `SELECT u.email FROM events e JOIN users u ON e.user_id = u.id WHERE e.id = $1`,
+      [guestCheck.rows[0].event_id]
+    );
+    if (
+      ownerEmail.rows[0]?.email &&
+      guestCheck.rows[0].email.toLowerCase() === ownerEmail.rows[0].email.toLowerCase()
+    ) {
+      return res.status(400).json({ error: 'Cannot remove the event organizer from the guest list' });
+    }
+
     await query('DELETE FROM guests WHERE id = $1', [guestId]);
 
     res.json({ message: 'Guest removed successfully' });
