@@ -89,19 +89,20 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
     <div className="space-y-6">
       {/* Header with Add Button */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold">Potluck Management</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Add suggested items for guests to claim, or let guests add their own items
-            </p>
+        <div className="mb-4">
+          <div className="flex flex-nowrap items-center justify-between gap-2">
+            <h3 className="text-lg font-semibold min-w-0 truncate">Potluck Management</h3>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="btn btn-primary btn-sm shrink-0 whitespace-nowrap"
+            >
+              + Suggest Item
+            </button>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn btn-primary"
-          >
-            + Suggest Item
-          </button>
+          <p className="text-sm text-gray-600 mt-1">
+            Add suggested items for guests to claim, or let guests add their own items
+          </p>
         </div>
 
         {/* Stats */}
