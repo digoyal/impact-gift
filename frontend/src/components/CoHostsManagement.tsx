@@ -41,8 +41,15 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
     setSubmitting(true);
 
     try {
-      await api.post(`/co-hosts/event/${eventId}`, formData);
-      toast.success('Co-host invited successfully!');
+      const response = await api.post<CoHost & { email_sent?: boolean; email_note?: string }>(
+        `/co-hosts/event/${eventId}`,
+        formData
+      );
+      if (response.data.email_sent === false && response.data.email_note) {
+        toast.success(`Co-host added. ${response.data.email_note}`);
+      } else {
+        toast.success('Co-host added. They will receive an email to accept.');
+      }
       setShowAddModal(false);
       setFormData({ email: '', name: '' });
       fetchCoHosts();
@@ -92,7 +99,7 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
           onClick={() => setShowAddModal(true)}
           className="btn btn-primary text-sm"
         >
-          + Add Co-Host
+          + Add Co-host
         </button>
       </div>
 
@@ -153,7 +160,7 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Add Co-Host</h3>
+              <h3 className="text-xl font-bold">Add Co-host</h3>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -181,7 +188,7 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  They'll receive an invitation email if they have an account
+                  They&apos;ll get an email with a link to accept co-host access for this event
                 </p>
               </div>
 
@@ -208,7 +215,7 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
                   disabled={submitting}
                   className="btn btn-primary flex-1"
                 >
-                  {submitting ? 'Inviting...' : 'Send Invitation'}
+                  {submitting ? 'Adding...' : 'Add Co-host'}
                 </button>
                 <button
                   type="button"

@@ -4,6 +4,10 @@ import { query } from '../database/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { sendCoHostInvitation } from '../services/emailService';
 import { isOwnerOrCoHost } from '../utils/coHostHelpers';
+import { isResendConfigured } from '../utils/resendConfig';
+
+const defaultFrontendUrl = () =>
+  process.env.FRONTEND_URL?.trim() || 'http://localhost:5180';
 
 const router = Router();
 
@@ -102,12 +106,17 @@ router.post(
         [eventId, coHostUserId, email, name || null]
       );
 
-      // Send co-host invitation email
-      const coHostId = result.rows[0].id;
+      // Send co-host notification email (non-blocking for add flow)
+      const coHost = result.rows[0];
+      const coHostId = coHost.id;
       const eventOwnerName = `${event.first_name} ${event.last_name}`;
-      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const baseUrl = defaultFrontendUrl();
       const acceptUrl = `${baseUrl}/events/${event.slug}/co-host/accept?id=${coHostId}`;
-      const eventUrl = `${baseUrl}/events/${event.slug}`;
+      const eventUrl = `${baseUrl}/event/${event.slug}`;
+
+      let emailSent = false;
+      let emailNote: string | undefined;
+      let emailDebug: { to: string; acceptUrl: string; subject: string } | undefined;
 
       try {
         const emailResult = await sendCoHostInvitation({
@@ -122,16 +131,39 @@ router.post(
         });
 
         if (emailResult.success) {
+          emailSent = true;
           console.log('Co-host invitation email sent successfully to:', email);
         } else {
-          console.error('Failed to send co-host invitation email to:', email, 'Error:', emailResult.error);
+          console.error(
+            'Failed to send co-host invitation email to:',
+            email,
+            'Error:',
+            emailResult.error || emailResult.message
+          );
+          if (!isResendConfigured()) {
+            emailNote =
+              'Email service not configured. Co-host was added but no email was sent.';
+            emailDebug = {
+              to: email,
+              acceptUrl,
+              subject: `🎉 You're invited to co-host "${event.title}"!`,
+            };
+            console.log('[co-hosts] Local email debug:', emailDebug);
+          } else {
+            emailNote = emailResult.error || emailResult.message || 'Email failed to send';
+          }
         }
       } catch (emailError) {
         console.error('Error sending co-host invitation email:', emailError);
-        // Don't fail the request if email fails
+        emailNote = 'Co-host was added but the notification email could not be sent.';
       }
 
-      res.status(201).json(result.rows[0]);
+      res.status(201).json({
+        ...coHost,
+        email_sent: emailSent,
+        ...(emailNote ? { email_note: emailNote } : {}),
+        ...(emailDebug ? { email_debug: emailDebug } : {}),
+      });
     } catch (error) {
       console.error('Error adding co-host:', error);
       res.status(500).json({ error: 'Server error' });
@@ -175,9 +207,9 @@ router.post('/:coHostId/resend', authenticate, async (req: AuthRequest, res: Res
 
     // Send co-host invitation email
     const eventOwnerName = `${data.first_name} ${data.last_name}`;
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const baseUrl = defaultFrontendUrl();
     const acceptUrl = `${baseUrl}/events/${data.slug}/co-host/accept?id=${coHostId}`;
-    const eventUrl = `${baseUrl}/events/${data.slug}`;
+    const eventUrl = `${baseUrl}/event/${data.slug}`;
 
     const emailResult = await sendCoHostInvitation({
       coHostName: data.name,
