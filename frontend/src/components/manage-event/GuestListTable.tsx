@@ -2,22 +2,45 @@ import { Guest } from '../../types';
 import { isOrganizerGuest } from '../../utils/eventOrganizerGuest';
 import AdditionalGuestsControl from './AdditionalGuestsControl';
 
-function rsvpLabel(guest: Guest): { text: string; className: string } {
+function rsvpBadge(guest: Guest): { text: string; className: string } {
   switch (guest.rsvp_status) {
     case 'attending':
-      return { text: 'Attending', className: 'text-green-700' };
+      return { text: 'Attending', className: 'bg-green-100 text-green-800' };
     case 'not_attending':
-      return { text: 'Declined', className: 'text-red-700' };
+      return { text: 'Declined', className: 'bg-red-100 text-red-800' };
     case 'maybe':
-      return { text: 'Maybe', className: 'text-yellow-700' };
+      return { text: 'Maybe', className: 'bg-yellow-100 text-yellow-900' };
     default:
-      return { text: 'No response', className: 'text-neutral-500' };
+      return { text: 'No reply', className: 'bg-neutral-100 text-neutral-600' };
   }
 }
 
-function inviteLabel(guest: Guest, organizer: boolean): string {
-  if (organizer) return 'Host (on list)';
-  return guest.invitation_sent ? 'Invited' : 'Invite pending';
+function GuestStatusInline({ guest, organizer }: { guest: Guest; organizer: boolean }) {
+  const rsvp = rsvpBadge(guest);
+  const inviteClass = guest.invitation_sent
+    ? 'bg-emerald-50 text-emerald-800'
+    : 'bg-amber-50 text-amber-900';
+
+  return (
+    <div
+      className="inline-flex max-w-full items-center gap-1.5 whitespace-nowrap text-xs"
+      title={guest.rsvp_comment || undefined}
+    >
+      <span className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 font-medium leading-none ${rsvp.className}`}>
+        {rsvp.text}
+      </span>
+      {!organizer && (
+        <span className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 font-medium leading-none ${inviteClass}`}>
+          {guest.invitation_sent ? 'Invited' : 'Pending'}
+        </span>
+      )}
+      {guest.rsvp_comment && (
+        <span className="min-w-0 truncate text-neutral-500 italic" title={guest.rsvp_comment}>
+          &ldquo;{guest.rsvp_comment}&rdquo;
+        </span>
+      )}
+    </div>
+  );
 }
 
 export interface GuestListTableProps {
@@ -96,7 +119,6 @@ const GuestListTable = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {guests.map((guest) => {
               const organizer = isOrganizerGuest(guest, ownerEmail);
-              const rsvp = rsvpLabel(guest);
               const isEditing = editingGuestId === guest.id;
 
               if (isEditing) {
@@ -120,8 +142,8 @@ const GuestListTable = ({
                         placeholder="Email"
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap">
-                      <span className={rsvp.className}>{rsvp.text}</span>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <GuestStatusInline guest={guest} organizer={organizer} />
                     </td>
                     <td className="px-4 py-3">
                       <AdditionalGuestsControl
@@ -161,18 +183,8 @@ const GuestListTable = ({
                   <td className="px-4 py-3 text-sm text-neutral-700 whitespace-nowrap max-w-[200px] truncate" title={guest.email}>
                     {guest.email}
                   </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div className="flex flex-col gap-1">
-                      <span className={`font-medium ${rsvp.className}`}>{rsvp.text}</span>
-                      <span className="text-xs text-neutral-500">
-                        {inviteLabel(guest, organizer)}
-                      </span>
-                      {guest.rsvp_comment && (
-                        <span className="text-xs text-neutral-500 italic truncate max-w-[180px]" title={guest.rsvp_comment}>
-                          &ldquo;{guest.rsvp_comment}&rdquo;
-                        </span>
-                      )}
-                    </div>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <GuestStatusInline guest={guest} organizer={organizer} />
                   </td>
                   <td className="px-4 py-3">
                     <AdditionalGuestsControl
