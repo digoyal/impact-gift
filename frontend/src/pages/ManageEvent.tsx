@@ -1047,7 +1047,7 @@ const ManageEvent = () => {
                   <div className="mt-5 pl-0 sm:pl-7">
                     <div className="mb-6">
                       <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
-                        Dress Code Description
+                        What to wear
                       </label>
                       <input
                         id="dress_code"
@@ -1065,8 +1065,8 @@ const ManageEvent = () => {
                       onChange={setAttirePhotos}
                       category="attire"
                       maxPhotos={6}
-                      label="Dress Code Example Photos"
-                      helpText="Upload outfit examples, color schemes, or theme inspiration photos to help guests visualize the dress code"
+                      label="Example photos"
+                      helpText="Upload outfit examples, color schemes, or theme inspiration so guests can see what to wear"
                     />
                   </div>
                 )}
