@@ -8,13 +8,29 @@ export interface DraftCoHost {
 }
 
 interface CoHostsDraftEditorProps {
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
   coHosts: DraftCoHost[];
   onChange: (next: DraftCoHost[]) => void;
 }
 
-const CoHostsDraftEditor = ({ coHosts, onChange }: CoHostsDraftEditorProps) => {
+const CoHostsDraftEditor = ({
+  enabled,
+  onEnabledChange,
+  coHosts,
+  onChange,
+}: CoHostsDraftEditorProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+
+  const handleEnabledChange = (checked: boolean) => {
+    onEnabledChange(checked);
+    if (!checked) {
+      onChange([]);
+      setName('');
+      setEmail('');
+    }
+  };
 
   const handleAdd = () => {
     const trimmedName = name.trim();
@@ -47,13 +63,28 @@ const CoHostsDraftEditor = ({ coHosts, onChange }: CoHostsDraftEditorProps) => {
 
   return (
     <div className="mt-6 pt-6 border-t border-gray-200">
-      <h4 className="text-base font-semibold text-gray-900 mb-1">Co-hosts (optional)</h4>
-      <p className="text-sm text-gray-600 mb-4">
-        Add people who can help manage this event. They&apos;ll get an email to accept after you
-        create the event.
-      </p>
+      <div className="flex items-start">
+        <div className="flex items-center h-5">
+          <input
+            id="cohosts_enabled"
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => handleEnabledChange(e.target.checked)}
+            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+          />
+        </div>
+        <div className="ml-3">
+          <label htmlFor="cohosts_enabled" className="font-medium text-gray-700">
+            Co-hosts
+          </label>
+          <p className="text-sm text-gray-500">
+            Add people who can help manage this event. They&apos;ll get an email to accept after you
+            create the event.
+          </p>
+        </div>
+      </div>
 
-      {coHosts.length > 0 && (
+      {enabled && coHosts.length > 0 && (
         <ul className="space-y-2 mb-4">
           {coHosts.map((coHost) => (
             <li
@@ -76,7 +107,8 @@ const CoHostsDraftEditor = ({ coHosts, onChange }: CoHostsDraftEditorProps) => {
         </ul>
       )}
 
-      <div className="space-y-4 rounded-lg border border-dashed border-gray-300 p-4 bg-white">
+      {enabled && (
+      <div className="mt-5 space-y-4 rounded-lg border border-dashed border-gray-300 p-4 bg-white">
         <div>
           <label htmlFor="cohost_draft_name" className="block text-sm font-medium text-gray-700 mb-1">
             Name *
@@ -125,6 +157,7 @@ const CoHostsDraftEditor = ({ coHosts, onChange }: CoHostsDraftEditorProps) => {
           Add Co-host
         </button>
       </div>
+      )}
     </div>
   );
 };

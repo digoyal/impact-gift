@@ -18,6 +18,7 @@ const CreateEvent = () => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [eventImage, setEventImage] = useState<{ url: string; publicId: string }>({ url: '', publicId: '' });
   const [attirePhotos, setAttirePhotos] = useState<EventPhoto[]>([]);
+  const [coHostsEnabled, setCoHostsEnabled] = useState(false);
   const [pendingCoHosts, setPendingCoHosts] = useState<DraftCoHost[]>([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -125,7 +126,7 @@ const CreateEvent = () => {
         }
       }
 
-      if (pendingCoHosts.length > 0) {
+      if (coHostsEnabled && pendingCoHosts.length > 0) {
         let coHostFailures = 0;
         for (const coHost of pendingCoHosts) {
           try {
@@ -327,7 +328,12 @@ const CreateEvent = () => {
               </div>
             </div>
 
-            <CoHostsDraftEditor coHosts={pendingCoHosts} onChange={setPendingCoHosts} />
+            <CoHostsDraftEditor
+              enabled={coHostsEnabled}
+              onEnabledChange={setCoHostsEnabled}
+              coHosts={pendingCoHosts}
+              onChange={setPendingCoHosts}
+            />
           </div>
 
           {/* RSVP Deadline */}
