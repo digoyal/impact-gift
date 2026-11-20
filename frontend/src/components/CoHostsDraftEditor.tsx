@@ -5,6 +5,7 @@ export interface DraftCoHost {
   id: string;
   name: string;
   email: string;
+  phone?: string;
 }
 
 interface CoHostsDraftEditorProps {
@@ -22,6 +23,7 @@ const CoHostsDraftEditor = ({
 }: CoHostsDraftEditorProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
 
   const handleEnabledChange = (checked: boolean) => {
     onEnabledChange(checked);
@@ -29,6 +31,7 @@ const CoHostsDraftEditor = ({
       onChange([]);
       setName('');
       setEmail('');
+      setPhone('');
     }
   };
 
@@ -53,12 +56,19 @@ const CoHostsDraftEditor = ({
       return;
     }
 
+    const trimmedPhone = phone.trim();
     onChange([
       ...coHosts,
-      { id: crypto.randomUUID(), name: trimmedName, email: trimmedEmail },
+      {
+        id: crypto.randomUUID(),
+        name: trimmedName,
+        email: trimmedEmail,
+        ...(trimmedPhone ? { phone: trimmedPhone } : {}),
+      },
     ]);
     setName('');
     setEmail('');
+    setPhone('');
   };
 
   return (
@@ -94,6 +104,9 @@ const CoHostsDraftEditor = ({
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 truncate">{coHost.name}</p>
                 <p className="text-sm text-gray-600 truncate">{coHost.email}</p>
+                {coHost.phone && (
+                  <p className="text-sm text-gray-500 truncate">{coHost.phone}</p>
+                )}
               </div>
               <button
                 type="button"
@@ -151,6 +164,26 @@ const CoHostsDraftEditor = ({
           <p className="text-xs text-gray-500 mt-1">
             They&apos;ll get an email with a link to accept co-host access for this event
           </p>
+        </div>
+
+        <div>
+          <label htmlFor="cohost_draft_phone" className="block text-sm font-medium text-gray-700 mb-1">
+            Phone (Optional)
+          </label>
+          <input
+            id="cohost_draft_phone"
+            type="tel"
+            className="input"
+            placeholder="(555) 123-4567"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAdd();
+              }
+            }}
+          />
         </div>
 
         <button type="button" onClick={handleAdd} className="btn btn-secondary">

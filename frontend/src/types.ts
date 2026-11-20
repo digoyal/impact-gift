@@ -243,6 +243,7 @@ export interface CoHost {
   user_id?: number;
   email: string;
   name?: string;
+  phone?: string;
   invited_at: string;
   accepted_at?: string;
   // Joined user data

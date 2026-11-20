@@ -133,6 +133,7 @@ const CreateEvent = () => {
             await api.post(`/co-hosts/event/${eventId}`, {
               name: coHost.name,
               email: coHost.email,
+              ...(coHost.phone?.trim() ? { phone: coHost.phone.trim() } : {}),
             });
           } catch (coHostError) {
             coHostFailures += 1;

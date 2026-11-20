@@ -51,7 +51,8 @@ router.post(
   authenticate,
   [
     body('email').isEmail().withMessage('Valid email required'),
-    body('name').trim().notEmpty().withMessage('Name is required')
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('phone').optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 32 }).withMessage('Phone must be 32 characters or less')
   ],
   async (req: AuthRequest, res: Response) => {
     try {
@@ -62,7 +63,8 @@ router.post(
 
       const { eventId } = req.params;
       const userId = req.user!.id;
-      const { email, name } = req.body;
+      const { email, name, phone: rawPhone } = req.body;
+      const phone = typeof rawPhone === 'string' && rawPhone.trim() ? rawPhone.trim() : null;
 
       // Verify user is owner or accepted co-host and get event details
       const eventCheck = await query(
@@ -100,10 +102,10 @@ router.post(
 
       // Add co-host
       const result = await query(
-        `INSERT INTO co_hosts (event_id, user_id, email, name)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO co_hosts (event_id, user_id, email, name, phone)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING *`,
-        [eventId, coHostUserId, email, name.trim()]
+        [eventId, coHostUserId, email, name.trim(), phone]
       );
 
       // Send co-host notification email (non-blocking for add flow)

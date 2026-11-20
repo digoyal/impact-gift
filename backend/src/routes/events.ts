@@ -835,18 +835,18 @@ router.post('/:identifier/duplicate', authenticate, async (req: AuthRequest, res
 
     // Copy co-hosts (only accepted ones)
     const coHostsResult = await query(
-      `SELECT email, name FROM co_hosts
+      `SELECT email, name, phone FROM co_hosts
        WHERE event_id = $1 AND accepted_at IS NOT NULL`,
       [originalEvent.id]
     );
 
     if (coHostsResult.rows.length > 0) {
       const coHostValues = coHostsResult.rows
-        .map((_, i) => `($1, $${i * 2 + 2}, $${i * 2 + 3}, CURRENT_TIMESTAMP)`)
+        .map((_, i) => `($1, $${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4}, CURRENT_TIMESTAMP)`)
         .join(', ');
-      const coHostParams = coHostsResult.rows.flatMap((c: any) => [c.email, c.name]);
+      const coHostParams = coHostsResult.rows.flatMap((c: any) => [c.email, c.name, c.phone ?? null]);
       await query(
-        `INSERT INTO co_hosts (event_id, email, name, invited_at)
+        `INSERT INTO co_hosts (event_id, email, name, phone, invited_at)
          VALUES ${coHostValues}`,
         [newEvent.id, ...coHostParams]
       );
