@@ -254,7 +254,7 @@ const CreateEvent = () => {
           {/* Submit */}
           <div className="flex gap-4">
             <button type="submit" disabled={loading} className="btn btn-primary flex-1">
-              {loading ? 'Creating Event...' : 'Create Event & Manage Guests'}
+              {loading ? 'Creating Event...' : 'Create, Manage Guests & More'}
             </button>
             <button
               type="button"
