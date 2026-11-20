@@ -12,6 +12,8 @@ router.get('/my-invitations', authenticate, async (req: AuthRequest, res: Respon
   try {
     const userEmail = req.user!.email;
 
+    const userId = req.user!.id;
+
     const result = await query(
       `SELECT g.*,
               e.title as event_title,
@@ -20,14 +22,18 @@ router.get('/my-invitations', authenticate, async (req: AuthRequest, res: Respon
               e.event_type,
               e.venue_name,
               e.start_time,
+              e.cancelled,
+              e.cancelled_at,
+              e.cancellation_reason,
               u.first_name as host_first_name,
               u.last_name as host_last_name
        FROM guests g
        JOIN events e ON g.event_id = e.id
        JOIN users u ON e.user_id = u.id
        WHERE LOWER(g.email) = LOWER($1)
+         AND e.user_id <> $2
        ORDER BY e.event_date DESC`,
-      [userEmail]
+      [userEmail, userId]
     );
 
     // Cache for 30 seconds to improve dashboard load times

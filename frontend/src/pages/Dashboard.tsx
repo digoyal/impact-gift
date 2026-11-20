@@ -24,6 +24,9 @@ interface Invitation {
   host_first_name: string;
   host_last_name: string;
   additional_guests?: number;
+  cancelled?: boolean;
+  cancelled_at?: string;
+  cancellation_reason?: string;
 }
 
 const Dashboard = () => {
@@ -205,14 +208,21 @@ const Dashboard = () => {
               {invitations.map((invitation, index) => (
                 <div
                   key={invitation.id}
-                  className="card-hover group overflow-hidden animate-fade-in"
+                  className={`card-hover group overflow-hidden animate-fade-in ${invitation.cancelled ? 'opacity-90 border border-neutral-300 bg-neutral-50' : ''}`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {/* Event Header */}
                   <div className="mb-4">
-                    <h3 className="text-heading-4 text-neutral-900 mb-2 group-hover:text-primary-600 transition-colors">
-                      {invitation.event_title}
-                    </h3>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className={`text-heading-4 mb-0 ${invitation.cancelled ? 'text-neutral-600 line-through decoration-neutral-400' : 'text-neutral-900 group-hover:text-primary-600'} transition-colors`}>
+                        {invitation.event_title}
+                      </h3>
+                      {invitation.cancelled && (
+                        <span className="badge bg-red-100 text-red-800 border border-red-200 text-xs font-semibold">
+                          Cancelled
+                        </span>
+                      )}
+                    </div>
                     <p className="text-caption">
                       Hosted by {invitation.host_first_name} {invitation.host_last_name}
                     </p>
@@ -240,7 +250,14 @@ const Dashboard = () => {
 
                   {/* RSVP Status */}
                   <div className="mb-4">
-                    {invitation.rsvp_status === 'no_response' ? (
+                    {invitation.cancelled ? (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-sm font-semibold text-red-900">This event has been cancelled</p>
+                        {invitation.cancellation_reason && (
+                          <p className="text-xs text-red-800 mt-1">{invitation.cancellation_reason}</p>
+                        )}
+                      </div>
+                    ) : invitation.rsvp_status === 'no_response' ? (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2">
                         <svg className="w-4 h-4 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -287,9 +304,9 @@ const Dashboard = () => {
                   {/* Action Button */}
                   <Link
                     to={`/event/${invitation.event_slug}?email=${encodeURIComponent(invitation.email)}`}
-                    className="btn btn-primary w-full text-center text-sm"
+                    className={`btn w-full text-center text-sm ${invitation.cancelled ? 'btn-secondary' : 'btn-primary'}`}
                   >
-                    View Event
+                    {invitation.cancelled ? 'View event details' : 'View Event'}
                   </Link>
                 </div>
               ))}
@@ -365,11 +382,23 @@ const Dashboard = () => {
               {events.map((event, index) => (
                 <div
                   key={event.id}
-                  className="card-hover group overflow-hidden animate-fade-in"
+                  className={`card-hover group overflow-hidden animate-fade-in ${event.cancelled ? 'opacity-90 border border-neutral-300 bg-neutral-50' : ''}`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {/* Event Header */}
                   <div className="mb-6">
+                    {event.cancelled && (
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span className="badge bg-red-100 text-red-800 border border-red-200 text-xs font-semibold">
+                          Cancelled
+                        </span>
+                        {event.cancelled_at && (
+                          <span className="text-xs text-neutral-500">
+                            {format(new Date(event.cancelled_at), 'MMM d, yyyy')}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center gap-3 mb-2">
                       {event.charities && event.charities.length > 0 && (
                         <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm shadow-soft flex-shrink-0">
@@ -378,7 +407,7 @@ const Dashboard = () => {
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-heading-4 text-neutral-900 truncate group-hover:text-primary-600 transition-colors">
+                          <h3 className={`text-heading-4 truncate transition-colors ${event.cancelled ? 'text-neutral-600' : 'text-neutral-900 group-hover:text-primary-600'}`}>
                             {event.title}
                           </h3>
                           {event.user_role === 'cohost' && (
@@ -474,7 +503,7 @@ const Dashboard = () => {
                   <div className="flex gap-3">
                     <Link
                       to={`/event/${event.slug}/manage`}
-                      className="flex-1 btn btn-primary text-center text-sm"
+                      className={`flex-1 btn text-center text-sm ${event.cancelled ? 'btn-secondary' : 'btn-primary'}`}
                     >
                       Manage
                     </Link>

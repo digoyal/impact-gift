@@ -175,6 +175,14 @@ const EventPage = () => {
                 <h1 className="text-display text-neutral-900 mb-3">
                   {event.title}
                 </h1>
+                {event.cancelled && (
+                  <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-900">
+                    <p className="font-semibold">This event has been cancelled</p>
+                    {event.cancellation_reason && (
+                      <p className="text-sm mt-1 text-red-800">{event.cancellation_reason}</p>
+                    )}
+                  </div>
+                )}
               </div>
               {isCoHost && !isOwner && (
                 <span className="badge badge-lg bg-primary-600 text-white flex-shrink-0">
@@ -386,7 +394,7 @@ const EventPage = () => {
               </div>
             )}
 
-            {event && (isOwner ? (
+            {event && !event.cancelled && (isOwner ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
                 <h3 className="text-2xl font-bold mb-2 flex items-center">
                   <span className="mr-2">🎉</span> You&apos;re hosting this event
@@ -413,6 +421,21 @@ const EventPage = () => {
                 }}
               />
             ))}
+            {event.cancelled && isOwner && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+                <p className="text-neutral-600">
+                  This event is cancelled. Open{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/event/${event.slug}/manage`)}
+                    className="text-primary-600 font-medium hover:underline"
+                  >
+                    Manage Event
+                  </button>{' '}
+                  for details or to duplicate.
+                </p>
+              </div>
+            )}
 
             {event.show_guest_list && <AttendingGuests eventSlug={event.slug} refreshTrigger={guestListRefreshTrigger} />}
 

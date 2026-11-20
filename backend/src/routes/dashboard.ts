@@ -65,14 +65,18 @@ router.get('/summary', authenticate, async (req: AuthRequest, res: Response) => 
                 e.event_type,
                 e.venue_name,
                 e.start_time,
+                e.cancelled,
+                e.cancelled_at,
+                e.cancellation_reason,
                 u.first_name as host_first_name,
                 u.last_name as host_last_name
          FROM guests g
          JOIN events e ON g.event_id = e.id
          JOIN users u ON e.user_id = u.id
          WHERE LOWER(g.email) = LOWER($1)
+           AND e.user_id <> $2
          ORDER BY e.event_date DESC`,
-        [userEmail]
+        [userEmail, userId]
       ).catch(err => { console.error('[Dashboard] Invitations query failed:', err); throw err; }),
 
       // Commitments from charity pages (made by me)
