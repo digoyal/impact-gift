@@ -103,7 +103,7 @@ router.post(
         `INSERT INTO co_hosts (event_id, user_id, email, name)
          VALUES ($1, $2, $3, $4)
          RETURNING *`,
-        [eventId, coHostUserId, email, name || null]
+        [eventId, coHostUserId, email, name.trim()]
       );
 
       // Send co-host notification email (non-blocking for add flow)

@@ -7,7 +7,6 @@ import { Event, Guest, Donation, RSVPSummaryResponse, Charity } from '../types';
 import { EventPhoto } from '../components/EventPhotosUploader';
 import CharitiesTab from '../components/manage-event/CharitiesTab';
 import RSVPTab from '../components/manage-event/RSVPTab';
-import CoHostsTab from '../components/manage-event/CoHostsTab';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import ProgressTab from '../components/manage-event/ProgressTab';
 import EventImageSelector from '../components/EventImageSelector';
@@ -32,7 +31,7 @@ const ManageEvent = () => {
   const [rsvpSummary, setRsvpSummary] = useState<RSVPSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  type TabType = 'details' | 'charities' | 'guests' | 'progress' | 'cohosts' | 'rsvp' | 'potluck' | 'communication';
+  type TabType = 'details' | 'charities' | 'guests' | 'progress' | 'rsvp' | 'potluck' | 'communication';
   // Set initial tab from location state or default to 'details'
   const initialTab = (location.state as { tab?: TabType })?.tab || 'details';
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
@@ -786,8 +785,8 @@ const ManageEvent = () => {
     );
   };
   const manageTabs: TabType[] = impactGiftOn
-    ? ['details', 'charities', 'guests', 'rsvp', 'communication', 'cohosts', 'potluck', 'progress']
-    : ['details', 'guests', 'rsvp', 'communication', 'cohosts', 'potluck'];
+    ? ['details', 'charities', 'guests', 'rsvp', 'communication', 'potluck', 'progress']
+    : ['details', 'guests', 'rsvp', 'communication', 'potluck'];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -860,40 +859,6 @@ const ManageEvent = () => {
         </div>
       )}
 
-      {/* Stats */}
-      <div className={`grid grid-cols-1 gap-4 mb-8 ${impactGiftOn ? 'md:grid-cols-6' : 'md:grid-cols-4'}`}>
-        <div className="card">
-          <div className="text-caption">Total Guests</div>
-          <div className="text-2xl font-bold text-neutral-900">{guests.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-caption">Pending Invites</div>
-          <div className="text-2xl font-bold text-orange-600">{pendingInvites}</div>
-        </div>
-        <div className="card">
-          <div className="text-caption">RSVP Attending</div>
-          <div className="text-2xl font-bold text-primary-600">{attendingCount}</div>
-        </div>
-        <div className="card">
-          <div className="text-caption">Total Headcount</div>
-          <div className="text-2xl font-bold text-primary-600">
-            {rsvpSummary?.summary.total_attending_headcount || attendingCount}
-          </div>
-        </div>
-        {impactGiftOn && (
-          <>
-            <div className="card">
-              <div className="text-caption">Donations</div>
-              <div className="text-2xl font-bold text-green-600">{donations.length}</div>
-            </div>
-            <div className="card">
-              <div className="text-caption">Total Raised</div>
-              <div className="text-2xl font-bold text-green-600">${totalDonations.toFixed(2)}</div>
-            </div>
-          </>
-        )}
-      </div>
-
       {/* Tabs */}
       <div className="border-b border-neutral-200 mb-6 -mx-4 sm:mx-0">
         <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
@@ -915,7 +880,6 @@ const ManageEvent = () => {
                 {tab === 'guests' && 'Guest List'}
                 {tab === 'rsvp' && 'RSVP Summary'}
                 {tab === 'communication' && 'Message Guests'}
-                {tab === 'cohosts' && 'Co-Hosts'}
                 {tab === 'potluck' && 'Potluck'}
                 {tab === 'progress' && 'Progress & Donations'}
               </button>
@@ -1836,11 +1800,6 @@ const ManageEvent = () => {
             </ul>
           </div>
         </div>
-      )}
-
-      {/* Co-Hosts Tab */}
-      {activeTab === 'cohosts' && (
-        <CoHostsTab eventId={event.id} />
       )}
 
       {/* Potluck Tab */}

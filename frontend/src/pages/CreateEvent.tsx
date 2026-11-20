@@ -7,6 +7,7 @@ import RequestCharityModal from '../components/RequestCharityModal';
 import EventImageSelector from '../components/EventImageSelector';
 import EventPhotosUploader, { EventPhoto } from '../components/EventPhotosUploader';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
+import CoHostsDraftEditor, { DraftCoHost } from '../components/CoHostsDraftEditor';
 
 const CreateEvent = () => {
   const [charities, setCharities] = useState<Charity[]>([]);
@@ -17,6 +18,7 @@ const CreateEvent = () => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [eventImage, setEventImage] = useState<{ url: string; publicId: string }>({ url: '', publicId: '' });
   const [attirePhotos, setAttirePhotos] = useState<EventPhoto[]>([]);
+  const [pendingCoHosts, setPendingCoHosts] = useState<DraftCoHost[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -120,6 +122,26 @@ const CreateEvent = () => {
         } catch (photoError) {
           console.error('Failed to save attire photos:', photoError);
           // Don't fail the entire operation, just log it
+        }
+      }
+
+      if (pendingCoHosts.length > 0) {
+        let coHostFailures = 0;
+        for (const coHost of pendingCoHosts) {
+          try {
+            await api.post(`/co-hosts/event/${eventId}`, {
+              name: coHost.name,
+              email: coHost.email,
+            });
+          } catch (coHostError) {
+            coHostFailures += 1;
+            console.error('Failed to add co-host:', coHost.email, coHostError);
+          }
+        }
+        if (coHostFailures > 0) {
+          toast.error(
+            `Event created, but ${coHostFailures} co-host invite${coHostFailures !== 1 ? 's' : ''} failed to send.`
+          );
         }
       }
 
@@ -304,6 +326,8 @@ const CreateEvent = () => {
                 />
               </div>
             </div>
+
+            <CoHostsDraftEditor coHosts={pendingCoHosts} onChange={setPendingCoHosts} />
           </div>
 
           {/* RSVP Deadline */}
