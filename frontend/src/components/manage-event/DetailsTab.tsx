@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Event } from '../../types';
 import EventImageSelector from '../EventImageSelector';
-import EventPhotosUploader, { EventPhoto } from '../EventPhotosUploader';
 
 interface FormData {
   title: string;
@@ -26,8 +24,6 @@ interface DetailsTabProps {
   onFormDataChange: (data: FormData) => void;
   eventImage: { url: string; publicId: string };
   onEventImageChange: (url: string, publicId: string) => void;
-  attirePhotos: EventPhoto[];
-  onAttirePhotosChange: (photos: EventPhoto[]) => void;
   onSubmit: (e: React.FormEvent) => void;
   saveLoading: boolean;
   onShowCancelModal: () => void;
@@ -39,28 +35,10 @@ const DetailsTab = ({
   onFormDataChange,
   eventImage,
   onEventImageChange,
-  attirePhotos,
-  onAttirePhotosChange,
   onSubmit,
   saveLoading,
   onShowCancelModal
 }: DetailsTabProps) => {
-  const [includeDressCode, setIncludeDressCode] = useState(false);
-
-  useEffect(() => {
-    setIncludeDressCode(
-      !!(formData.dress_code?.trim()) || attirePhotos.length > 0
-    );
-  }, [event.id, formData.dress_code, attirePhotos.length]);
-
-  const handleIncludeDressCodeToggle = (enabled: boolean) => {
-    setIncludeDressCode(enabled);
-    if (!enabled) {
-      onFormDataChange({ ...formData, dress_code: '' });
-      onAttirePhotosChange([]);
-    }
-  };
-
   const handleChange = (field: keyof FormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -242,55 +220,6 @@ const DetailsTab = ({
             />
           </div>
 
-          <div className="border-t pt-4">
-            <div className="flex items-start">
-              <div className="flex items-center h-5">
-                <input
-                  id="include_dress_code"
-                  type="checkbox"
-                  checked={includeDressCode}
-                  onChange={(e) => handleIncludeDressCodeToggle(e.target.checked)}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-              </div>
-              <div className="ml-3">
-                <label htmlFor="include_dress_code" className="font-medium text-gray-700">
-                  Include dress code
-                </label>
-                <p className="text-sm text-gray-500">
-                  Add a description and example photos so guests know how to dress.
-                </p>
-              </div>
-            </div>
-
-            {includeDressCode && (
-              <div className="mt-5 pl-0 sm:pl-7">
-                <div className="mb-6">
-                  <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
-                    What to wear
-                  </label>
-                  <input
-                    id="dress_code"
-                    type="text"
-                    className="input"
-                    placeholder="e.g., Western Casual, Indian Ethnic, Formal"
-                    value={formData.dress_code}
-                    onChange={handleChange('dress_code')}
-                  />
-                </div>
-
-                <EventPhotosUploader
-                  eventId={event?.id}
-                  photos={attirePhotos}
-                  onChange={onAttirePhotosChange}
-                  category="attire"
-                  maxPhotos={6}
-                  label="Example photos"
-                  helpText="Upload outfit examples, color schemes, or theme inspiration so guests can see what to wear"
-                />
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Settings */}

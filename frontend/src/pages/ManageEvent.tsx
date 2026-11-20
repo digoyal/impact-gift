@@ -116,7 +116,6 @@ const ManageEvent = () => {
   });
   const [eventImage, setEventImage] = useState<{ url: string; publicId: string }>({ url: '', publicId: '' });
   const [attirePhotos, setAttirePhotos] = useState<EventPhoto[]>([]);
-  const [includeDressCode, setIncludeDressCode] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
   // Charities tab state
@@ -212,11 +211,6 @@ const ManageEvent = () => {
           ? attireResult.data.photos
           : [];
       setAttirePhotos(loadedAttirePhotos);
-
-      const hasDressCode =
-        !!(eventRes.data.dress_code && String(eventRes.data.dress_code).trim()) ||
-        loadedAttirePhotos.length > 0;
-      setIncludeDressCode(hasDressCode);
 
       // Populate form data for Event Details tab
       setFormData({
@@ -665,14 +659,6 @@ const ManageEvent = () => {
   };
 
   // Event Details tab handlers
-  const handleIncludeDressCodeToggle = (enabled: boolean) => {
-    setIncludeDressCode(enabled);
-    if (!enabled) {
-      setFormData((prev) => ({ ...prev, dress_code: '' }));
-      setAttirePhotos([]);
-    }
-  };
-
   const toggleCharity = (charityId: number) => {
     setSelectedCharityIds((prev) =>
       prev.includes(charityId)
@@ -684,7 +670,7 @@ const ManageEvent = () => {
   const persistAttirePhotos = async () => {
     if (!event) return;
     const newAttirePhotos = attirePhotos.filter((photo) => !photo.id);
-    if (includeDressCode && newAttirePhotos.length > 0) {
+    if (newAttirePhotos.length > 0) {
       const photosToSave = newAttirePhotos.map((photo) => ({
         imageUrl: photo.photo_url,
         publicId: photo.photo_public_id,
@@ -697,7 +683,7 @@ const ManageEvent = () => {
         console.error('Error saving attire photos:', photoError);
       }
     }
-    const existingAttirePhotos = includeDressCode ? attirePhotos.filter((photo) => photo.id) : [];
+    const existingAttirePhotos = attirePhotos.filter((photo) => photo.id);
     for (const photo of existingAttirePhotos) {
       if (photo.id) {
         try {
@@ -752,7 +738,7 @@ const ManageEvent = () => {
     setSaveLoading(true);
     try {
       await api.put(`/events/${slug}`, {
-        dress_code: includeDressCode ? formData.dress_code || null : null,
+        dress_code: formData.dress_code?.trim() ? formData.dress_code.trim() : null,
       });
       await persistAttirePhotos();
       toast.success('Dress code saved');
@@ -1190,8 +1176,6 @@ const ManageEvent = () => {
 
       {activeTab === 'dresscode' && (
         <DressCodeTab
-          includeDressCode={includeDressCode}
-          onIncludeDressCodeChange={handleIncludeDressCodeToggle}
           dressCode={formData.dress_code}
           onDressCodeChange={(value) => setFormData({ ...formData, dress_code: value })}
           attirePhotos={attirePhotos}
