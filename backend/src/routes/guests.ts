@@ -274,6 +274,20 @@ router.put(
         return res.status(403).json({ error: 'Not authorized' });
       }
 
+      const ownerResult = await query(
+        `SELECT u.email FROM events e JOIN users u ON e.user_id = u.id WHERE e.id = $1`,
+        [guest.event_id]
+      );
+      const ownerEmail = ownerResult.rows[0]?.email as string | undefined;
+      const isOrganizerGuest =
+        !!ownerEmail && guest.email.toLowerCase() === ownerEmail.toLowerCase();
+
+      if (isOrganizerGuest && (name !== undefined || email !== undefined)) {
+        return res.status(400).json({
+          error: 'The event host name and email cannot be changed here. You may update additional guests only.',
+        });
+      }
+
       // If email is being changed, check for conflicts
       if (email && email !== guest.email) {
         const conflictCheck = await query(

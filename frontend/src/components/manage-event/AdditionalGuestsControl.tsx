@@ -24,7 +24,7 @@ const AdditionalGuestsControl = ({
 
   if (disabled) {
     return (
-      <span className="text-gray-500 text-sm" title="Host guest cannot be edited here">
+      <span className="text-gray-500 text-sm">
         {safeValue > 0 ? `+${safeValue}` : '—'}
       </span>
     );

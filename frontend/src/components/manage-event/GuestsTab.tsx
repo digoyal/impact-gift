@@ -270,7 +270,6 @@ const GuestsTab = ({
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                         <AdditionalGuestsControl
                           value={guest.additional_guests ?? 0}
-                          disabled={organizer}
                           saving={additionalGuestsSavingId === guest.id}
                           onChange={(next) => onUpdateAdditionalGuests(guest.id, next)}
                         />

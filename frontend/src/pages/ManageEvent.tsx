@@ -573,14 +573,6 @@ const ManageEvent = () => {
 
   const updateGuestAdditionalGuests = async (guestId: number, additionalGuests: number) => {
     if (!event) return;
-    const guest = guests.find((g) => g.id === guestId);
-    const owner =
-      getEventOwnerEmail(event) ??
-      (event.user_role === 'owner' ? user?.email?.toLowerCase() ?? null : null);
-    if (guest && isOrganizerGuest(guest, owner)) {
-      return;
-    }
-
     setAdditionalGuestsSavingId(guestId);
     try {
       const response = await api.put(`/guests/${guestId}`, { additional_guests: additionalGuests });
@@ -1456,7 +1448,6 @@ const ManageEvent = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                             <AdditionalGuestsControl
                               value={guest.additional_guests ?? 0}
-                              disabled={organizer}
                               saving={additionalGuestsSavingId === guest.id}
                               onChange={(next) => updateGuestAdditionalGuests(guest.id, next)}
                             />
@@ -1587,7 +1578,6 @@ const ManageEvent = () => {
                               <div className="text-xs text-neutral-500 mb-1">Additional guests (plus-ones)</div>
                               <AdditionalGuestsControl
                                 value={guest.additional_guests ?? 0}
-                                disabled={organizer}
                                 saving={additionalGuestsSavingId === guest.id}
                                 onChange={(next) => updateGuestAdditionalGuests(guest.id, next)}
                               />
