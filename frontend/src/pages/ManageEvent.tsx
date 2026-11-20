@@ -11,7 +11,7 @@ import CoHostsTab from '../components/manage-event/CoHostsTab';
 import RSVPTab from '../components/manage-event/RSVPTab';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import ProgressTab from '../components/manage-event/ProgressTab';
-import AdditionalGuestsControl from '../components/manage-event/AdditionalGuestsControl';
+import GuestsTab from '../components/manage-event/GuestsTab';
 import EventImageSelector from '../components/EventImageSelector';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { isImpactGiftEnabled } from '../utils/impactGift';
@@ -845,31 +845,6 @@ const ManageEvent = () => {
   });
   const impactGiftOn = isImpactGiftEnabled(event);
 
-  const renderInviteStatusBadge = (guest: Guest, mobile = false) => {
-    if (isOrganizerGuest(guest, ownerEmail)) {
-      return mobile ? (
-        <span className="badge badge-primary flex-shrink-0">Host</span>
-      ) : (
-        <span className="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800">Host</span>
-      );
-    }
-    if (mobile) {
-      return (
-        <span className={`badge ${guest.invitation_sent ? 'badge-success' : 'badge-warning'} flex-shrink-0`}>
-          {guest.invitation_sent ? 'Invited' : 'Pending'}
-        </span>
-      );
-    }
-    return (
-      <span
-        className={`px-2 py-1 text-xs rounded-full ${
-          guest.invitation_sent ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-        }`}
-      >
-        {guest.invitation_sent ? 'Invited' : 'Pending'}
-      </span>
-    );
-  };
   const manageTabs: TabType[] = [
     'details',
     'guests',
@@ -1242,401 +1217,35 @@ const ManageEvent = () => {
 
       {/* Guest List Tab */}
       {activeTab === 'guests' && (
-        <div className="space-y-6">
-          {/* Quick Add Guests */}
-          <div className="card">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Quick Add Guests</h3>
-                <p className="text-sm text-gray-600 mt-1">Upload a CSV, paste emails, or import from past events</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <label className="btn btn-secondary cursor-pointer">
-                  📤 Upload CSV
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleCSVUpload}
-                    className="hidden"
-                  />
-                </label>
-                <button
-                  onClick={() => setShowBulkImportModal(true)}
-                  className="btn btn-secondary flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Paste Email List
-                </button>
-                <button
-                  onClick={openMasterGuestList}
-                  className="btn btn-secondary flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  Import from Past Events
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Add Single Guest */}
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-4">Add Guest</h3>
-            <form onSubmit={addGuest} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    className="input"
-                    placeholder="friend@example.com"
-                    value={guestEmail}
-                    onChange={(e) => setGuestEmail(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    className="input"
-                    placeholder="John Doe"
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                  />
-                </div>
-              </div>
-              <button type="submit" className="btn btn-primary">
-                Add Guest
-              </button>
-            </form>
-          </div>
-
-          {/* Guest List */}
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Guests ({guests.length})</h3>
-              {pendingInvites > 0 && (
-                <button onClick={sendInvitations} className="btn btn-primary">
-                  Send {pendingInvites} Pending Invitation{pendingInvites !== 1 ? 's' : ''}
-                </button>
-              )}
-            </div>
-
-            {guests.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No guests added yet. Add some above!</p>
-            ) : (
-              <>
-              {/* Desktop Table - hidden on mobile */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">RSVP</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">+Guests</th>
-                      {impactGiftOn && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Donated</th>
-                      )}
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {displayGuests.map((guest) => {
-                      const organizer = isOrganizerGuest(guest, ownerEmail);
-                      return editingGuestId === guest.id ? (
-                        // Edit mode
-                        <tr key={guest.id} className="bg-primary-50">
-                          <td className="px-6 py-4">
-                            <input
-                              type="email"
-                              className="input text-sm py-1"
-                              value={editEmail}
-                              onChange={(e) => setEditEmail(e.target.value)}
-                              placeholder="Email"
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <input
-                              type="text"
-                              className="input text-sm py-1"
-                              value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
-                              placeholder="Name"
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">{renderInviteStatusBadge(guest)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <span className={`text-xs ${
-                              guest.rsvp_status === 'attending' ? 'text-green-600' :
-                              guest.rsvp_status === 'not_attending' ? 'text-red-600' :
-                              guest.rsvp_status === 'maybe' ? 'text-yellow-600' :
-                              'text-gray-400'
-                            }`}>
-                              {guest.rsvp_status === 'attending' && '✅'}
-                              {guest.rsvp_status === 'not_attending' && '❌'}
-                              {guest.rsvp_status === 'maybe' && '🤔'}
-                              {guest.rsvp_status === 'no_response' && '-'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                            <AdditionalGuestsControl
-                              value={editAdditionalGuests}
-                              saving={additionalGuestsSavingId === guest.id}
-                              onChange={setEditAdditionalGuests}
-                            />
-                          </td>
-                          {impactGiftOn && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {guest.has_donated ? (
-                                <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                          )}
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
-                            <button
-                              onClick={() => updateGuest(guest.id)}
-                              className="text-green-600 hover:text-green-800 font-medium"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={cancelEdit}
-                              className="text-gray-600 hover:text-gray-800"
-                            >
-                              Cancel
-                            </button>
-                          </td>
-                        </tr>
-                      ) : (
-                        // View mode
-                        <tr key={guest.id} className={organizer ? 'bg-neutral-50' : undefined}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">{guest.email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">{guest.name || '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{renderInviteStatusBadge(guest)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className="flex flex-col">
-                              <span className={`text-xs font-medium ${
-                                guest.rsvp_status === 'attending' ? 'text-green-600' :
-                                guest.rsvp_status === 'not_attending' ? 'text-red-600' :
-                                guest.rsvp_status === 'maybe' ? 'text-yellow-600' :
-                                'text-gray-400'
-                              }`}>
-                                {guest.rsvp_status === 'attending' && '✅ Attending'}
-                                {guest.rsvp_status === 'not_attending' && '❌ Not Attending'}
-                                {guest.rsvp_status === 'maybe' && '🤔 Maybe'}
-                                {guest.rsvp_status === 'no_response' && '-'}
-                              </span>
-                              {guest.rsvp_comment && (
-                                <span className="text-xs text-gray-500 italic mt-1" title={guest.rsvp_comment}>
-                                  "{guest.rsvp_comment.substring(0, 30)}{guest.rsvp_comment.length > 30 ? '...' : ''}"
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                            <AdditionalGuestsControl
-                              value={guest.additional_guests ?? 0}
-                              saving={additionalGuestsSavingId === guest.id}
-                              onChange={(next) => updateGuestAdditionalGuests(guest.id, next)}
-                            />
-                          </td>
-                          {impactGiftOn && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {guest.has_donated ? (
-                                <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                          )}
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
-                            {!organizer && guest.invitation_sent && (
-                              <button
-                                onClick={() => resendInvitation(guest.id)}
-                                className="text-primary-600 hover:text-primary-800"
-                                title="Resend invitation"
-                              >
-                                Resend
-                              </button>
-                            )}
-                            {!organizer && (
-                              <>
-                                <button
-                                  onClick={() => startEditGuest(guest)}
-                                  className="text-primary-600 hover:text-primary-800"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => removeGuest(guest.id)}
-                                  className="text-red-600 hover:text-red-800"
-                                >
-                                  Remove
-                                </button>
-                              </>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Cards - visible only on mobile */}
-              <div className="md:hidden space-y-4">
-                {displayGuests.map((guest) => {
-                  const organizer = isOrganizerGuest(guest, ownerEmail);
-                  return (
-                  <div key={guest.id} className={`card-interactive ${editingGuestId === guest.id ? 'ring-2 ring-primary-500' : ''} ${organizer ? 'border-primary-200 bg-neutral-50' : ''}`}>
-                    <div className="space-y-3">
-                      {editingGuestId === guest.id ? (
-                        /* Edit mode */
-                        <>
-                          <div>
-                            <label className="label text-xs">Email</label>
-                            <input
-                              type="email"
-                              className="input text-sm"
-                              value={editEmail}
-                              onChange={(e) => setEditEmail(e.target.value)}
-                              placeholder="Email"
-                            />
-                          </div>
-                          <div>
-                            <label className="label text-xs">Name</label>
-                            <input
-                              type="text"
-                              className="input text-sm"
-                              value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
-                              placeholder="Name"
-                            />
-                          </div>
-                          <div>
-                            <label className="label text-xs">Additional guests</label>
-                            <AdditionalGuestsControl
-                              value={editAdditionalGuests}
-                              saving={additionalGuestsSavingId === guest.id}
-                              onChange={setEditAdditionalGuests}
-                            />
-                          </div>
-                          <div className="flex gap-2 pt-2">
-                            <button
-                              onClick={() => updateGuest(guest.id)}
-                              className="btn btn-primary btn-sm flex-1"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={cancelEdit}
-                              className="btn btn-secondary btn-sm flex-1"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        /* View mode */
-                        <>
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-neutral-900 truncate">{guest.email}</div>
-                              <div className="text-sm text-neutral-600">{guest.name || 'No name'}</div>
-                            </div>
-                            {renderInviteStatusBadge(guest, true)}
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                              <div className="text-xs text-neutral-500 mb-1">RSVP Status</div>
-                              <div className={`font-medium ${
-                                guest.rsvp_status === 'attending' ? 'text-green-600' :
-                                guest.rsvp_status === 'not_attending' ? 'text-red-600' :
-                                guest.rsvp_status === 'maybe' ? 'text-yellow-600' :
-                                'text-neutral-400'
-                              }`}>
-                                {guest.rsvp_status === 'attending' && 'Attending'}
-                                {guest.rsvp_status === 'not_attending' && 'Not Attending'}
-                                {guest.rsvp_status === 'maybe' && 'Maybe'}
-                                {guest.rsvp_status === 'no_response' && 'No Response'}
-                              </div>
-                            </div>
-                            <div className="col-span-2">
-                              <div className="text-xs text-neutral-500 mb-1">Additional guests (plus-ones)</div>
-                              <AdditionalGuestsControl
-                                value={guest.additional_guests ?? 0}
-                                saving={additionalGuestsSavingId === guest.id}
-                                onChange={(next) => updateGuestAdditionalGuests(guest.id, next)}
-                              />
-                            </div>
-                            {impactGiftOn && (
-                              <div>
-                                <div className="text-xs text-neutral-500 mb-1">Donated</div>
-                                <div className="font-medium">
-                                  {guest.has_donated ? (
-                                    <span className="text-green-600">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                                  ) : (
-                                    <span className="text-neutral-400">-</span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {guest.rsvp_comment && (
-                            <div className="text-xs text-neutral-600 italic bg-neutral-50 p-2 rounded">
-                              "{guest.rsvp_comment}"
-                            </div>
-                          )}
-
-                          {!organizer && (
-                            <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-200">
-                              {guest.invitation_sent && (
-                                <button
-                                  onClick={() => resendInvitation(guest.id)}
-                                  className="btn btn-secondary btn-sm flex-1"
-                                >
-                                  Resend
-                                </button>
-                              )}
-                              <button
-                                onClick={() => startEditGuest(guest)}
-                                className="btn btn-secondary btn-sm flex-1"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => removeGuest(guest.id)}
-                                className="btn btn-secondary btn-sm text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  );
-                })}
-              </div>
-              </>
-            )}
-          </div>
-        </div>
+        <GuestsTab
+          ownerEmail={ownerEmail}
+          guests={displayGuests}
+          impactGiftOn={impactGiftOn}
+          guestEmail={guestEmail}
+          guestName={guestName}
+          onGuestEmailChange={setGuestEmail}
+          onGuestNameChange={setGuestName}
+          onAddGuest={addGuest}
+          onRemoveGuest={removeGuest}
+          onResendInvitation={resendInvitation}
+          onSendInvitations={sendInvitations}
+          onCSVUpload={handleCSVUpload}
+          onOpenBulkImport={() => setShowBulkImportModal(true)}
+          onOpenMasterList={openMasterGuestList}
+          pendingInvites={pendingInvites}
+          editingGuestId={editingGuestId}
+          editEmail={editEmail}
+          editName={editName}
+          onEditEmailChange={setEditEmail}
+          onEditNameChange={setEditName}
+          onStartEdit={startEditGuest}
+          onUpdateGuest={updateGuest}
+          onCancelEdit={cancelEdit}
+          editAdditionalGuests={editAdditionalGuests}
+          onEditAdditionalGuestsChange={setEditAdditionalGuests}
+          onUpdateAdditionalGuests={updateGuestAdditionalGuests}
+          additionalGuestsSavingId={additionalGuestsSavingId}
+        />
       )}
 
       {/* RSVP Summary Tab */}
