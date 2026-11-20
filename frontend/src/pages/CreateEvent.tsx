@@ -306,7 +306,7 @@ const CreateEvent = () => {
           </div>
 
           {/* RSVP Deadline */}
-          <div>
+          <div className="border-t pt-6">
             <label htmlFor="rsvp_deadline" className="block text-sm font-medium text-gray-700 mb-1">
               RSVP Deadline (Optional)
             </label>
@@ -320,6 +320,56 @@ const CreateEvent = () => {
             <p className="text-xs text-gray-500 mt-1">
               Set a date by which guests should respond
             </p>
+          </div>
+
+          {/* Dress Code */}
+          <div className="border-t pt-6">
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="include_dress_code"
+                  type="checkbox"
+                  checked={includeDressCode}
+                  onChange={(e) => handleIncludeDressCodeToggle(e.target.checked)}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="ml-3">
+                <label htmlFor="include_dress_code" className="font-medium text-gray-700">
+                  Include dress code
+                </label>
+                <p className="text-sm text-gray-500">
+                  Add a description and example photos so guests know how to dress.
+                </p>
+              </div>
+            </div>
+
+            {includeDressCode && (
+              <div className="mt-5 pl-0 sm:pl-7">
+                <div className="mb-6">
+                  <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
+                    Dress Code Description
+                  </label>
+                  <input
+                    id="dress_code"
+                    type="text"
+                    className="input"
+                    placeholder="e.g., Western Casual, Indian Ethnic, Formal"
+                    value={formData.dress_code}
+                    onChange={(e) => setFormData({ ...formData, dress_code: e.target.value })}
+                  />
+                </div>
+
+                <EventPhotosUploader
+                  photos={attirePhotos}
+                  onChange={setAttirePhotos}
+                  category="attire"
+                  maxPhotos={6}
+                  label="Dress Code Example Photos"
+                  helpText="Upload outfit examples, color schemes, or theme inspiration photos to help guests visualize the dress code"
+                />
+              </div>
+            )}
           </div>
 
           {/* Potluck Option */}
