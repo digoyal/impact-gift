@@ -34,32 +34,32 @@ const PotluckItemsTable = ({
       <table className="min-w-[640px] w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
           <tr>
-            <th className="px-3 py-2 text-left">Category</th>
-            <th className="px-3 py-2 text-left">Item</th>
-            <th className="px-3 py-2 text-left w-14">Qty</th>
+            <th className="px-2 py-1.5 text-left">Category</th>
+            <th className="px-2 py-1.5 text-left">Item</th>
+            <th className="px-2 py-1.5 text-left w-14">Qty</th>
             {variant === 'unclaimed' ? (
-              <th className="px-3 py-2 text-left">Status</th>
+              <th className="px-2 py-1.5 text-left">Status</th>
             ) : (
-              <th className="px-3 py-2 text-left">{personLabel}</th>
+              <th className="px-2 py-1.5 text-left">{personLabel}</th>
             )}
-            <th className="px-3 py-2 text-left">Notes</th>
-            {onDelete && <th className="px-3 py-2 text-right">Actions</th>}
+            <th className="px-2 py-1.5 text-left">Notes</th>
+            {onDelete && <th className="px-2 py-1.5 text-right">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 bg-white">
           {items.map((item) => (
             <tr key={item.id} className={rowTint}>
-              <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{formatCategory(item.category)}</td>
-              <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap">{item.item_name}</td>
-              <td className="px-3 py-2 text-gray-700">{item.quantity}</td>
+              <td className="px-2 py-1.5 text-xs text-gray-700 whitespace-nowrap">{formatCategory(item.category)}</td>
+              <td className="px-2 py-1.5 text-xs font-medium text-gray-900 whitespace-nowrap">{item.item_name}</td>
+              <td className="px-2 py-1.5 text-xs text-gray-700">{item.quantity}</td>
               {variant === 'unclaimed' ? (
-                <td className="px-3 py-2 whitespace-nowrap">
+                <td className="px-2 py-1.5 whitespace-nowrap">
                   <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
                     Waiting for guest
                   </span>
                 </td>
               ) : (
-                <td className="px-3 py-2 text-gray-700">
+                <td className="px-2 py-1.5 text-xs text-gray-700">
                   <span className="font-medium">{item.guest_name || '—'}</span>
                   {item.guest_email && (
                     <span className="block text-xs text-gray-500 truncate max-w-[12rem]" title={item.guest_email}>
@@ -73,11 +73,11 @@ const PotluckItemsTable = ({
                   )}
                 </td>
               )}
-              <td className="px-3 py-2 text-gray-600 max-w-[10rem] truncate italic" title={item.notes || undefined}>
+              <td className="px-2 py-1.5 text-xs text-gray-600 max-w-[10rem] truncate italic" title={item.notes || undefined}>
                 {item.notes?.trim() ? item.notes : '—'}
               </td>
               {onDelete && (
-                <td className="px-3 py-2 text-right whitespace-nowrap">
+                <td className="px-2 py-1.5 text-right whitespace-nowrap">
                   <button
                     type="button"
                     onClick={() => onDelete(item.id)}
@@ -173,12 +173,11 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
   const guestAdded = items.filter(item => !item.is_suggested);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header with Add Button */}
-      <div className="card">
-        <div className="mb-4">
-          <div className="flex flex-nowrap items-center justify-between gap-2">
-            <h3 className="text-lg font-semibold min-w-0 truncate">Potluck Management</h3>
+      <div className="card !p-4 sm:!p-5">
+        <div className="flex flex-nowrap items-center justify-between gap-2">
+            <h3 className="text-base font-semibold min-w-0 truncate">Potluck</h3>
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
@@ -186,15 +185,14 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
             >
               + Suggest Item
             </button>
-          </div>
         </div>
       </div>
 
       {/* Unclaimed Suggested Items */}
       {suggestedUnclaimed.length > 0 && (
-        <div className="card">
-          <h3 className="text-md font-semibold mb-3 text-yellow-700">
-            📋 Unclaimed Suggested Items ({suggestedUnclaimed.length})
+        <div className="card !p-4 sm:!p-5">
+          <h3 className="text-sm font-semibold mb-2 text-yellow-700">
+            Unclaimed ({suggestedUnclaimed.length})
           </h3>
           <PotluckItemsTable
             items={suggestedUnclaimed}
@@ -206,9 +204,9 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
 
       {/* Claimed Suggested Items */}
       {suggestedClaimed.length > 0 && (
-        <div className="card">
-          <h3 className="text-md font-semibold mb-3 text-green-700">
-            ✓ Claimed Suggested Items ({suggestedClaimed.length})
+        <div className="card !p-4 sm:!p-5">
+          <h3 className="text-sm font-semibold mb-2 text-green-700">
+            Claimed ({suggestedClaimed.length})
           </h3>
           <PotluckItemsTable
             items={suggestedClaimed}
@@ -220,9 +218,9 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
 
       {/* Guest-Added Items */}
       {guestAdded.length > 0 && (
-        <div className="card">
-          <h3 className="text-md font-semibold mb-3 text-blue-700">
-            🎁 Guest-Added Items ({guestAdded.length})
+        <div className="card !p-4 sm:!p-5">
+          <h3 className="text-sm font-semibold mb-2 text-blue-700">
+            Guest added ({guestAdded.length})
           </h3>
           <PotluckItemsTable items={guestAdded} variant="guest" />
         </div>
@@ -230,8 +228,8 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
 
       {/* Empty State */}
       {items.length === 0 && (
-        <div className="card">
-          <div className="text-center py-8">
+        <div className="card !p-4 sm:!p-5">
+          <div className="text-center py-5 text-sm">
             <p className="text-gray-500">
               No potluck items yet. Use &ldquo;Suggest Item&rdquo; above to get started.
             </p>
