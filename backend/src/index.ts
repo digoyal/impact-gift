@@ -162,10 +162,25 @@ async function startServer() {
     const { startScheduledTasks } = await import('./services/scheduler');
     startScheduledTasks();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
+
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use. Stop the other process or change PORT in backend/.env`);
+      } else {
+        console.error('❌ Server failed to start:', error);
+      }
+      process.exit(1);
+    });
+
+    const shutdown = () => {
+      server.close(() => process.exit(0));
+    };
+    process.once('SIGTERM', shutdown);
+    process.once('SIGINT', shutdown);
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
