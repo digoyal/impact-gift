@@ -15,7 +15,11 @@ export function toastEmailSendResult(data: EmailSendResponse | undefined) {
   }
 
   if (data.email_sent === false) {
-    toast.error(data.email_note || data.error || 'No emails were sent');
+    toast.error(
+      data.email_note ||
+        data.error ||
+        'No emails were sent. Without SMTP_HOST, check the API server console for the message preview.'
+    );
     return;
   }
 

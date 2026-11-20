@@ -654,14 +654,15 @@ router.post('/:slug/notify-guests', authenticate, async (req: AuthRequest, res: 
       return res.status(400).json({ error: 'No guests to notify' });
     }
 
-    // Send notification emails
-    const { Resend } = require('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const { sendEmail, smtpConfigured, getSmtpFrom, SMTP_NOT_CONFIGURED_NOTE } = await import(
+      '../services/emailService'
+    );
 
     const eventUrl = `${process.env.FRONTEND_URL}/event/${event.slug}`;
     const senderName = `${event.first_name} ${event.last_name}`;
+    const fromEmail = getSmtpFrom();
+    let notified = 0;
 
-    // Send emails to all guests
     for (const guest of guests) {
       const htmlEmail = `
 <!DOCTYPE html>
@@ -724,18 +725,29 @@ router.post('/:slug/notify-guests', authenticate, async (req: AuthRequest, res: 
 </html>
 `;
 
-      await resend.emails.send({
-        from: 'Impact Gift <noreply@giftwithimpact.com>',
+      const textBody = `${senderName} has updated the details for ${event.title}. View: ${eventUrl}`;
+      const result = await sendEmail({
+        from: fromEmail,
         to: guest.email,
         replyTo: event.user_email,
         subject: `${event.title} - Event Updated`,
-        html: htmlEmail
+        text: textBody,
+        html: htmlEmail,
       });
+      if (result.success) notified++;
     }
 
-    console.log(`[NOTIFY GUESTS] Sent update notifications to ${guests.length} guests for event ${event.id}`);
+    console.log(`[NOTIFY GUESTS] Sent update notifications to ${notified}/${guests.length} guests for event ${event.id}`);
 
-    res.json({ success: true, notified: guests.length });
+    res.json({
+      success: notified > 0,
+      email_sent: notified > 0,
+      notified,
+      total: guests.length,
+      ...(!notified && !smtpConfigured()
+        ? { email_note: SMTP_NOT_CONFIGURED_NOTE }
+        : {}),
+    });
   } catch (error) {
     console.error('[NOTIFY GUESTS] Error:', error);
     res.status(500).json({ error: 'Failed to send notifications' });
@@ -941,14 +953,11 @@ router.post('/:identifier/cancel', authenticate, async (req: AuthRequest, res: R
 
     const guests = guestsResult.rows;
 
-    // Send cancellation emails when Resend is configured (failures do not roll back cancel)
-    let notifiedGuests = 0;
-    const { isResendConfigured, getResendFromEmail } = await import('../utils/resendConfig');
+      let notifiedGuests = 0;
+    const { sendEmail, smtpConfigured, getSmtpFrom } = await import('../services/emailService');
 
-    if (isResendConfigured() && guests.length > 0) {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY!);
-      const fromEmail = getResendFromEmail();
+    if (smtpConfigured() && guests.length > 0) {
+      const fromEmail = getSmtpFrom();
       const organizerName = `${event.first_name} ${event.last_name}`;
       const reasonText = cancellation_reason
         ? `\n\nReason: ${cancellation_reason}`
@@ -968,22 +977,25 @@ We apologize for any inconvenience this may cause.
 Best regards,
 ${organizerName}`;
 
-        try {
-          await resend.emails.send({
-            from: fromEmail,
-            to: guest.email,
-            replyTo: event.organizer_email,
-            subject: `Event Cancelled: ${event.title}`,
-            text: emailBody,
-            html: emailBody.replace(/\n/g, '<br>')
-          });
-          notifiedGuests++;
-        } catch (emailError) {
-          console.error(`Failed to send cancellation email to ${guest.email}:`, emailError);
+        const result = await sendEmail({
+          from: fromEmail,
+          to: guest.email,
+          replyTo: event.organizer_email,
+          subject: `Event Cancelled: ${event.title}`,
+          text: emailBody,
+          html: emailBody.replace(/\n/g, '<br>'),
+        });
+        if (result.success) notifiedGuests++;
+        else {
+          console.error(`Failed to send cancellation email to ${guest.email}:`, result.error);
         }
       }
 
-      console.log(`[CANCEL EVENT] Sent cancellation emails to ${notifiedGuests}/${guests.length} guests for event ${event.id}`);
+      console.log(
+        `[CANCEL EVENT] Sent cancellation emails to ${notifiedGuests}/${guests.length} guests for event ${event.id}`
+      );
+    } else if (guests.length > 0 && !smtpConfigured()) {
+      console.warn('[CANCEL EVENT] SMTP not configured — cancellation emails logged only');
     }
 
     res.json({

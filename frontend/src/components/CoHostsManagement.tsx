@@ -57,7 +57,7 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
         }
       );
       if (response.data.email_sent === false && response.data.email_note) {
-        toast.success(`Co-host added. ${response.data.email_note}`);
+        toast.success(`Co-host added. ${response.data.email_note}`, { duration: 6000 });
       } else {
         toast.success('Co-host added. They will receive an email to accept.');
       }

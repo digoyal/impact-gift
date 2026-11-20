@@ -5,8 +5,12 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { CreateEmailTemplateInput } from '../types';
 import { isOwnerOrCoHost } from '../utils/coHostHelpers';
 import { buildGuestFilterClause, GuestFilter } from '../utils/guestFiltering';
-import { sendEmail } from '../services/emailService';
-import { getResendFromEmail, isResendConfigured } from '../utils/resendConfig';
+import {
+  sendEmail,
+  smtpConfigured,
+  getSmtpFrom,
+  SMTP_NOT_CONFIGURED_NOTE,
+} from '../services/emailService';
 
 const router = Router();
 
@@ -93,19 +97,8 @@ View your invitation: {{EVENT_LINK}}`;
         });
       }
 
-      if (!isResendConfigured()) {
-        return res.status(503).json({
-          error: 'Email service not configured',
-          email_sent: false,
-          email_note:
-            'Email service not configured. Set RESEND_API_KEY to send invitations.',
-          sent: 0,
-          total: guests.length,
-        });
-      }
-
       const baseEventUrl = `${process.env.FRONTEND_URL}/event/${event.slug}`;
-      const fromEmail = getResendFromEmail();
+      const fromEmail = getSmtpFrom();
       const senderName = `${event.first_name} ${event.last_name}`;
 
       let sentCount = 0;
@@ -232,9 +225,10 @@ View your invitation: {{EVENT_LINK}}`;
       }
 
       if (!emailSent) {
-        response.email_note =
-          errors_list[0]?.error ||
-          'No emails were delivered. Check email service configuration and try again.';
+        response.email_note = !smtpConfigured()
+          ? SMTP_NOT_CONFIGURED_NOTE
+          : errors_list[0]?.error ||
+            'No emails were delivered. Check SMTP configuration and try again.';
         return res.status(502).json(response);
       }
 
@@ -319,18 +313,10 @@ View your invitation: {{EVENT_LINK}}`;
       const personalizedBody = plainTextBody.replace(/\{\{EVENT_LINK\}\}/g, eventUrl);
 
       console.log(`[RESEND] Email details - To: ${guest.email}, ReplyTo: ${guest.user_email}`);
-      console.log(`[RESEND] Resend configured: ${isResendConfigured()}`);
-
-      if (!isResendConfigured()) {
-        return res.status(503).json({
-          error: 'Email service not configured',
-          email_sent: false,
-          email_note: 'Email service not configured. Set RESEND_API_KEY to resend invitations.',
-        });
-      }
+      console.log(`[RESEND] SMTP configured: ${smtpConfigured()}`);
 
       try {
-          console.log(`[RESEND] Sending email via Resend...`);
+          console.log(`[RESEND] Sending invitation email...`);
 
           // Create HTML email template
           const htmlEmail = `
@@ -428,7 +414,7 @@ View your invitation: {{EVENT_LINK}}`;
           `;
 
           const emailResult = await sendEmail({
-            from: getResendFromEmail(),
+            from: getSmtpFrom(),
             to: guest.email,
             replyTo: guest.user_email,
             subject,
@@ -559,19 +545,8 @@ router.post(
         return res.status(400).json({ error: filterMessage });
       }
 
-      if (!isResendConfigured()) {
-        return res.status(503).json({
-          error: 'Email service not configured',
-          email_sent: false,
-          email_note:
-            'Email service not configured. Set RESEND_API_KEY to message guests.',
-          sent: 0,
-          total: guests.length,
-        });
-      }
-
       const eventUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/event/${event.slug}`;
-      const fromEmail = getResendFromEmail();
+      const fromEmail = getSmtpFrom();
       const senderName = `${event.first_name} ${event.last_name}`;
 
       const defaultMessage = update_message || `We've made some updates to the event! Check out the latest details on the event page.`;
@@ -733,9 +708,10 @@ router.post(
       };
 
       if (!emailSent) {
-        response.email_note =
-          errors_list[0]?.error ||
-          'No emails were delivered. Check email service configuration and try again.';
+        response.email_note = !smtpConfigured()
+          ? SMTP_NOT_CONFIGURED_NOTE
+          : errors_list[0]?.error ||
+            'No emails were delivered. Check SMTP configuration and try again.';
         return res.status(502).json(response);
       }
 

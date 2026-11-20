@@ -4,7 +4,7 @@ import { query } from '../database/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { sendCoHostInvitation } from '../services/emailService';
 import { isOwnerOrCoHost } from '../utils/coHostHelpers';
-import { isResendConfigured } from '../utils/resendConfig';
+import { smtpConfigured, SMTP_NOT_CONFIGURED_NOTE } from '../services/emailService';
 
 const defaultFrontendUrl = () =>
   process.env.FRONTEND_URL?.trim() || 'http://localhost:5180';
@@ -142,9 +142,8 @@ router.post(
             'Error:',
             emailResult.error || emailResult.message
           );
-          if (!isResendConfigured()) {
-            emailNote =
-              'Email service not configured. Co-host was added but no email was sent.';
+          if (!smtpConfigured()) {
+            emailNote = `Co-host was added but no email was sent. ${SMTP_NOT_CONFIGURED_NOTE}`;
             emailDebug = {
               to: email,
               acceptUrl,
@@ -226,7 +225,11 @@ router.post('/:coHostId/resend', authenticate, async (req: AuthRequest, res: Res
 
     if (!emailResult.success) {
       console.error('Failed to resend co-host invitation email to:', data.email, 'Error:', emailResult.error);
-      return res.status(500).json({ error: 'Failed to send invitation email: ' + (emailResult.error || 'Unknown error') });
+      return res.status(502).json({
+        error: 'Failed to send invitation email: ' + (emailResult.error || emailResult.note || 'Unknown error'),
+        email_sent: false,
+        email_note: !smtpConfigured() ? SMTP_NOT_CONFIGURED_NOTE : emailResult.error,
+      });
     }
 
     console.log('Co-host invitation email resent successfully to:', data.email);

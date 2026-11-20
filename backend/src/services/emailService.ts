@@ -1,7 +1,11 @@
-import { Resend } from 'resend';
-import { isResendConfigured } from '../utils/resendConfig';
+import {
+  sendEmail as sendMail,
+  smtpConfigured,
+  getSmtpFrom,
+  SMTP_NOT_CONFIGURED_NOTE,
+} from './mail';
 
-const resend = isResendConfigured() ? new Resend(process.env.RESEND_API_KEY!) : null;
+export { smtpConfigured, getSmtpFrom, SMTP_NOT_CONFIGURED_NOTE };
 
 export interface SendEmailParams {
   to: string | string[];
@@ -63,52 +67,28 @@ export interface CoHostInvitationEmailParams {
   eventUrl: string;
 }
 
-const fromEmail = process.env.RESEND_FROM_EMAIL || 'Impact Gift <noreply@giftwithimpact.com>';
+function plainFromHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 /**
- * Send a generic email
+ * Send a generic email (HTML + plain text via SMTP).
  */
 export async function sendEmail({ to, subject, html, from, text, replyTo }: SendEmailParams) {
-  console.log('[sendEmail] Starting email send process');
-  console.log('[sendEmail] To:', to);
-  console.log('[sendEmail] Subject:', subject);
-  console.log('[sendEmail] From:', from || fromEmail);
-
-  try {
-    if (!isResendConfigured() || !resend) {
-      console.warn('[sendEmail] RESEND_API_KEY not configured. Email would have been sent:');
-      console.log({ to, subject });
-      return { success: false, message: 'Email service not configured' };
-    }
-
-    console.log('[sendEmail] Resend is configured, calling resend.emails.send()...');
-    const result = await resend.emails.send({
-      from: from || fromEmail,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      ...(text ? { text } : {}),
-      ...(replyTo ? { replyTo } : {}),
-    });
-
-    console.log('[sendEmail] Resend API response:', JSON.stringify(result, null, 2));
-
-    if (result.error) {
-      console.error('[sendEmail] Failed to send email:', result.error);
-      return { success: false, error: result.error.message };
-    }
-
-    console.log('[sendEmail] Email sent successfully! ID:', result.data?.id);
-    return { success: true, id: result.data?.id };
-  } catch (error: unknown) {
-    console.error('[sendEmail] Exception caught:', error);
-    console.error('[sendEmail] Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    return { success: false, error: error.message };
-  }
+  const bodyText = text || plainFromHtml(html);
+  return sendMail({
+    to,
+    subject,
+    text: bodyText,
+    html,
+    from: from || getSmtpFrom(),
+    replyTo,
+  });
 }
 
 /**

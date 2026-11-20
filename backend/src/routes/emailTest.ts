@@ -5,7 +5,7 @@ import { sendEmail, sendEventInvitation } from '../services/emailService';
 const router = Router();
 
 /**
- * Test email endpoint - sends a test email to verify Resend configuration
+ * Test email endpoint - sends a test email to verify SMTP configuration
  * DELETE THIS IN PRODUCTION
  */
 router.post('/test', authenticate, async (req: AuthRequest, res: Response) => {
@@ -42,7 +42,7 @@ router.post('/test', authenticate, async (req: AuthRequest, res: Response) => {
                           Congratulations! 🎉
                         </p>
                         <p style="margin: 0 0 24px; font-size: 16px; color: #4b5563; line-height: 1.6;">
-                          Your Resend email integration is working perfectly. You're all set to send beautiful email notifications!
+                          Your SMTP email integration is working. You're all set to send notifications!
                         </p>
                         <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; padding: 24px; text-align: center; margin: 32px 0;">
                           <p style="margin: 0; font-size: 18px; color: #065f46; font-weight: 600; line-height: 1.6;">

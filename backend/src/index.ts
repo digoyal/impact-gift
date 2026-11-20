@@ -46,7 +46,7 @@ if (missingEnvVars.length > 0) {
 }
 
 // Warn about recommended environment variables
-const recommendedEnvVars = ['ADMIN_EMAILS', 'DATABASE_URL', 'RESEND_API_KEY'];
+const recommendedEnvVars = ['ADMIN_EMAILS', 'DATABASE_URL', 'SMTP_HOST'];
 const missingRecommended = recommendedEnvVars.filter(varName => !process.env[varName]);
 
 if (missingRecommended.length > 0) {

@@ -2,8 +2,7 @@ import { Router, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { query } from '../database/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { sendEmail } from '../services/emailService';
-import { isResendConfigured } from '../utils/resendConfig';
+import { sendEmail, smtpConfigured, SMTP_NOT_CONFIGURED_NOTE } from '../services/emailService';
 import { buildGuestFilterClause, GuestFilter, getGuestCountsByFilter } from '../utils/guestFiltering';
 
 const router = Router();
@@ -58,16 +57,6 @@ router.post(
       }
 
       const guests = guestsResult.rows;
-
-      if (!isResendConfigured()) {
-        return res.status(503).json({
-          error: 'Email service not configured',
-          email_sent: false,
-          email_note: 'Email service not configured. Set RESEND_API_KEY to send emails.',
-          sent: 0,
-          total: guests.length,
-        });
-      }
 
       // Build email HTML
       const emailHtml = `
@@ -176,8 +165,9 @@ router.post(
       };
 
       if (!emailSent) {
-        response.email_note =
-          'No emails were delivered. Check email service configuration and try again.';
+        response.email_note = !smtpConfigured()
+          ? SMTP_NOT_CONFIGURED_NOTE
+          : 'No emails were delivered. Check SMTP configuration and try again.';
         return res.status(502).json(response);
       }
 

@@ -3,15 +3,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
-import { Resend } from 'resend';
 import { query } from '../database/db';
 import { User, UserPayload } from '../types';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { getResendFromEmail, isResendConfigured } from '../utils/resendConfig';
+import { sendEmail as sendMail, smtpConfigured } from '../services/mail';
 
 const router = Router();
-const resend = isResendConfigured() ? new Resend(process.env.RESEND_API_KEY!) : null;
-const FROM_EMAIL = getResendFromEmail();
 
 // Helper function to link co-host invitations to user account
 async function linkCoHostInvitations(userId: number, email: string): Promise<void> {
@@ -204,78 +201,31 @@ router.post(
 
       const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-      // Send email if Resend is configured
-      if (resend) {
-        try {
-          await resend.emails.send({
-            from: FROM_EMAIL,
-            to: email,
-            subject: 'Reset Your Password - Impact Gift',
-            html: `
-              <!DOCTYPE html>
-              <html>
-                <head>
-                  <meta charset="utf-8">
-                  <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-                    .button { display: inline-block; background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
-                    .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-                    .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 20px 0; border-radius: 4px; }
-                  </style>
-                </head>
-                <body>
-                  <div class="container">
-                    <div class="header">
-                      <h1>Reset Your Password</h1>
-                    </div>
-                    <div class="content">
-                      <p>Hi there,</p>
-                      <p>We received a request to reset your password for your Impact Gift account. Click the button below to create a new password:</p>
+      const resetText = `You requested a password reset for your Impact Gift account.
 
-                      <div style="text-align: center;">
-                        <a href="${resetUrl}" class="button">Reset Password</a>
-                      </div>
+Open this link to set a new password (expires in 1 hour):
+${resetUrl}
 
-                      <p>Or copy and paste this link into your browser:</p>
-                      <p style="word-break: break-all; color: #667eea;">${resetUrl}</p>
+If you did not request this, you can ignore this email.
+`;
 
-                      <div class="warning">
-                        <strong>⚠️ Security Notice:</strong>
-                        <ul style="margin: 10px 0 0 0; padding-left: 20px;">
-                          <li>This link will expire in <strong>1 hour</strong></li>
-                          <li>If you didn't request this reset, please ignore this email</li>
-                          <li>Your password won't change unless you click the link above</li>
-                        </ul>
-                      </div>
+      const mailResult = await sendMail({
+        to: email,
+        subject: 'Reset Your Password - Impact Gift',
+        text: resetText,
+        html: resetText.replace(/\n/g, '<br>'),
+      });
 
-                      <p>Thanks,<br>The Impact Gift Team</p>
-                    </div>
-                    <div class="footer">
-                      <p>Impact Gift - Turn celebrations into charitable contributions</p>
-                      <p>This is an automated email. Please do not reply.</p>
-                    </div>
-                  </div>
-                </body>
-              </html>
-            `
-          });
-          console.log('Password reset email sent to:', email);
-        } catch (emailError) {
-          console.error('Error sending email:', emailError);
-          // Don't fail the request if email fails - user can contact support
-        }
+      if (mailResult.success) {
+        console.log('Password reset email sent to:', email);
       }
 
-      // In development, also return the reset URL
-      const response: any = {
-        message: 'If that email exists, a password reset link has been sent.'
+      const response: Record<string, unknown> = {
+        message: 'If that email exists, a password reset link has been sent.',
       };
 
-      if (!resend) {
-        response.resetUrl = resetUrl; // Only in dev when email not configured
+      if (!smtpConfigured()) {
+        response.resetUrl = resetUrl;
       }
 
       res.json(response);
