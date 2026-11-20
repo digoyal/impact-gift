@@ -23,11 +23,6 @@ const DressCodeTab = ({
   return (
     <div className="card">
       <form onSubmit={onSave} className="space-y-6">
-        <h3 className="text-xl font-semibold text-gray-900">Dress Code</h3>
-        <p className="text-sm text-gray-600">
-          Share what guests should wear, with optional example photos.
-        </p>
-
         <div>
           <label htmlFor="manage_dress_code" className="block text-sm font-medium text-gray-700 mb-1">
             What to wear
