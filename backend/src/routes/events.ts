@@ -5,6 +5,7 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { generateSlug } from '../utils/slug';
 import { CreateEventInput } from '../types';
 import { isOwnerOrCoHost } from '../utils/coHostHelpers';
+import { insertCreatorAsAttendingGuest } from '../utils/hostGuest';
 
 const router = Router();
 
@@ -109,6 +110,8 @@ router.post(
       );
 
       const newEvent = result.rows[0];
+
+      await insertCreatorAsAttendingGuest(newEvent.id, req.user!, host_name);
 
       // Add charities to event_charities junction table (only if charities were provided)
       if (charityList.length > 0) {
@@ -800,6 +803,8 @@ router.post('/:identifier/duplicate', authenticate, async (req: AuthRequest, res
     );
 
     const newEvent = newEventResult.rows[0];
+
+    await insertCreatorAsAttendingGuest(newEvent.id, req.user!, newEvent.host_name);
 
     // Copy event charities
     const charitiesResult = await query(

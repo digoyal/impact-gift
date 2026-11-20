@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { upload, deleteImage, requireCloudinaryUpload } from '../services/cloudinaryService';
+import { upload, deleteImage, fileToUploadMeta } from '../services/uploadService';
 import { query } from '../database/db';
 
 const router = Router();
@@ -9,17 +9,14 @@ const router = Router();
  * Upload event photos (supports multiple files)
  * POST /api/event-photos/upload
  */
-router.post('/upload', authenticate, requireCloudinaryUpload, upload.array('images', 10), async (req: AuthRequest, res: Response) => {
+router.post('/upload', authenticate, upload.array('images', 10), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.files || (req.files as any[]).length === 0) {
       return res.status(400).json({ error: 'No image files provided' });
     }
 
-    const files = req.files as any[]; // Cloudinary adds custom properties
-    const uploadedPhotos = files.map(file => ({
-      imageUrl: file.path,
-      publicId: file.filename
-    }));
+    const files = req.files as Express.Multer.File[];
+    const uploadedPhotos = files.map((file) => fileToUploadMeta(file, req));
 
     res.json({
       success: true,
@@ -157,7 +154,7 @@ router.delete('/:photoId', authenticate, async (req: AuthRequest, res: Response)
     // Delete from database
     await query('DELETE FROM event_photos WHERE id = $1', [photoId]);
 
-    // Delete from Cloudinary
+    // Delete stored file when applicable
     if (photo.photo_public_id) {
       await deleteImage(photo.photo_public_id);
     }

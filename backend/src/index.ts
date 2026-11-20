@@ -28,8 +28,10 @@ import calendarRoutes from './routes/calendar';
 import targetedEmailsRoutes from './routes/targetedEmails';
 import scheduledTasksRoutes from './routes/scheduledTasks';
 import dashboardRoutes from './routes/dashboard';
+import { LOCAL_UPLOADS_DIR, ensureLocalUploadsDir } from './services/uploadService';
 
 dotenv.config();
+ensureLocalUploadsDir();
 
 // CRITICAL: Validate required environment variables on startup
 const requiredEnvVars = ['JWT_SECRET'];
@@ -50,15 +52,6 @@ const missingRecommended = recommendedEnvVars.filter(varName => !process.env[var
 if (missingRecommended.length > 0) {
   console.warn('⚠️  WARNING: Missing recommended environment variables:');
   missingRecommended.forEach(varName => console.warn(`   - ${varName}`));
-}
-
-{
-  // After dotenv: avoid importing cloudinaryService before env is loaded
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { isCloudinaryConfigured } = require('./services/cloudinaryService');
-  if (!isCloudinaryConfigured()) {
-    console.warn('⚠️  Cloudinary not configured — event image / dress-code uploads will return 503 until CLOUDINARY_* is set in backend/.env');
-  }
 }
 
 const app = express();
@@ -96,6 +89,8 @@ app.use(morgan('dev'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use('/api/uploads', express.static(LOCAL_UPLOADS_DIR));
 
 app.get('/api/health', async (req, res) => {
   try {

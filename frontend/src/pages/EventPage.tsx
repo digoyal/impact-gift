@@ -386,16 +386,33 @@ const EventPage = () => {
               </div>
             )}
 
-            {event && (
+            {event && (isOwner ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+                <h3 className="text-2xl font-bold mb-2 flex items-center">
+                  <span className="mr-2">🎉</span> You&apos;re hosting this event
+                </h3>
+                <p className="text-neutral-600">
+                  No RSVP needed — you&apos;re already counted as attending. Manage invitations and responses from
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/event/${event.slug}/manage`)}
+                    className="text-primary-600 font-medium hover:underline"
+                  >
+                    Manage Event
+                  </button>
+                  .
+                </p>
+              </div>
+            ) : (
               <RSVPSection
                 guestEmail={guestEmail}
                 eventId={event.id}
                 onRSVPSubmit={() => {
-                  // RSVP submitted successfully - refresh guest list
                   setGuestListRefreshTrigger(prev => prev + 1);
                 }}
               />
-            )}
+            ))}
 
             {event.show_guest_list && <AttendingGuests eventSlug={event.slug} refreshTrigger={guestListRefreshTrigger} />}
 

@@ -23,8 +23,8 @@ CREATE INDEX IF NOT EXISTS idx_event_photos_display_order ON event_photos(event_
 -- Add comments for documentation
 COMMENT ON TABLE event_photos IS 'Stores multiple photos per event (dress code examples, venue, theme, etc.)';
 COMMENT ON COLUMN event_photos.event_id IS 'Reference to the event';
-COMMENT ON COLUMN event_photos.photo_url IS 'Cloudinary URL for the photo';
-COMMENT ON COLUMN event_photos.photo_public_id IS 'Cloudinary public ID for deletion';
+COMMENT ON COLUMN event_photos.photo_url IS 'Public URL for the photo (e.g. /api/uploads/...)';
+COMMENT ON COLUMN event_photos.photo_public_id IS 'Storage id for deletion (local/events/...)';
 COMMENT ON COLUMN event_photos.category IS 'Photo category: dress_code, venue, theme, menu, other';
 COMMENT ON COLUMN event_photos.caption IS 'Optional caption/description for the photo';
 COMMENT ON COLUMN event_photos.display_order IS 'Order for displaying photos (0-indexed)';

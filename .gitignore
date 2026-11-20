@@ -13,5 +13,6 @@ coverage/
 *.swo
 .cache/
 *.tsbuildinfo
+backend/uploads/
 vite.config.d.ts
 vite.config.js
