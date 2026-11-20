@@ -8,6 +8,93 @@ interface PotluckManagementProps {
   eventId: number;
 }
 
+type PotluckTableVariant = 'unclaimed' | 'claimed' | 'guest';
+
+const formatCategory = (category?: string) => (category?.trim() ? category : '—');
+
+const PotluckItemsTable = ({
+  items,
+  variant,
+  onDelete,
+}: {
+  items: PotluckItem[];
+  variant: PotluckTableVariant;
+  onDelete?: (id: number) => void;
+}) => {
+  const personLabel = variant === 'claimed' ? 'Claimed by' : 'Added by';
+  const rowTint =
+    variant === 'unclaimed'
+      ? 'bg-yellow-50/60'
+      : variant === 'claimed'
+        ? 'bg-green-50/40'
+        : 'bg-blue-50/30';
+
+  return (
+    <div className="overflow-x-auto -mx-1 sm:mx-0">
+      <table className="min-w-[640px] w-full divide-y divide-gray-200 text-sm">
+        <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
+          <tr>
+            <th className="px-3 py-2 text-left">Item</th>
+            <th className="px-3 py-2 text-left">Category</th>
+            <th className="px-3 py-2 text-left w-14">Qty</th>
+            {variant === 'unclaimed' ? (
+              <th className="px-3 py-2 text-left">Status</th>
+            ) : (
+              <th className="px-3 py-2 text-left">{personLabel}</th>
+            )}
+            <th className="px-3 py-2 text-left">Notes</th>
+            {onDelete && <th className="px-3 py-2 text-right">Actions</th>}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 bg-white">
+          {items.map((item) => (
+            <tr key={item.id} className={rowTint}>
+              <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap">{item.item_name}</td>
+              <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{formatCategory(item.category)}</td>
+              <td className="px-3 py-2 text-gray-700">{item.quantity}</td>
+              {variant === 'unclaimed' ? (
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
+                    Waiting for guest
+                  </span>
+                </td>
+              ) : (
+                <td className="px-3 py-2 text-gray-700">
+                  <span className="font-medium">{item.guest_name || '—'}</span>
+                  {item.guest_email && (
+                    <span className="block text-xs text-gray-500 truncate max-w-[12rem]" title={item.guest_email}>
+                      {item.guest_email}
+                    </span>
+                  )}
+                  {variant === 'claimed' && item.claimed_at && (
+                    <span className="block text-xs text-gray-500">
+                      {new Date(item.claimed_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </td>
+              )}
+              <td className="px-3 py-2 text-gray-600 max-w-[10rem] truncate italic" title={item.notes || undefined}>
+                {item.notes?.trim() ? item.notes : '—'}
+              </td>
+              {onDelete && (
+                <td className="px-3 py-2 text-right whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => onDelete(item.id)}
+                    className="text-red-600 hover:text-red-700 text-sm font-medium"
+                  >
+                    Delete
+                  </button>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
   const [items, setItems] = useState<PotluckItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,37 +215,11 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
           <h3 className="text-md font-semibold mb-3 text-yellow-700">
             📋 Unclaimed Suggested Items ({suggestedUnclaimed.length})
           </h3>
-          <div className="space-y-3">
-            {suggestedUnclaimed.map((item) => (
-              <div
-                key={item.id}
-                className="border-2 border-yellow-200 bg-yellow-50 rounded-lg p-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{item.item_name}</h4>
-                      {item.quantity > 1 && (
-                        <span className="text-sm text-gray-500">× {item.quantity}</span>
-                      )}
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
-                        Waiting for guest
-                      </span>
-                    </div>
-                    {item.notes && (
-                      <p className="text-sm text-gray-600 mt-2 italic">{item.notes}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteSuggestedItem(item.id)}
-                    className="text-red-600 hover:text-red-700 text-sm font-medium ml-4"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PotluckItemsTable
+            items={suggestedUnclaimed}
+            variant="unclaimed"
+            onDelete={handleDeleteSuggestedItem}
+          />
         </div>
       )}
 
@@ -168,48 +229,11 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
           <h3 className="text-md font-semibold mb-3 text-green-700">
             ✓ Claimed Suggested Items ({suggestedClaimed.length})
           </h3>
-          <div className="space-y-3">
-            {suggestedClaimed.map((item) => (
-              <div
-                key={item.id}
-                className="border border-green-200 bg-green-50 rounded-lg p-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{item.item_name}</h4>
-                      {item.quantity > 1 && (
-                        <span className="text-sm text-gray-500">× {item.quantity}</span>
-                      )}
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
-                        Claimed
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700 mt-1">
-                      <span className="font-medium">{item.guest_name}</span>
-                      {item.guest_email && (
-                        <span className="text-gray-500"> ({item.guest_email})</span>
-                      )}
-                    </p>
-                    {item.notes && (
-                      <p className="text-sm text-gray-600 mt-2 italic">{item.notes}</p>
-                    )}
-                    {item.claimed_at && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Claimed on {new Date(item.claimed_at).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteSuggestedItem(item.id)}
-                    className="text-red-600 hover:text-red-700 text-sm font-medium ml-4"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PotluckItemsTable
+            items={suggestedClaimed}
+            variant="claimed"
+            onDelete={handleDeleteSuggestedItem}
+          />
         </div>
       )}
 
@@ -219,34 +243,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
           <h3 className="text-md font-semibold mb-3 text-blue-700">
             🎁 Guest-Added Items ({guestAdded.length})
           </h3>
-          <div className="space-y-3">
-            {guestAdded.map((item) => (
-              <div
-                key={item.id}
-                className="border border-blue-200 bg-blue-50 rounded-lg p-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{item.item_name}</h4>
-                      {item.quantity > 1 && (
-                        <span className="text-sm text-gray-500">× {item.quantity}</span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-700 mt-1">
-                      <span className="font-medium">{item.guest_name}</span>
-                      {item.guest_email && (
-                        <span className="text-gray-500"> ({item.guest_email})</span>
-                      )}
-                    </p>
-                    {item.notes && (
-                      <p className="text-sm text-gray-600 mt-2 italic">{item.notes}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PotluckItemsTable items={guestAdded} variant="guest" />
         </div>
       )}
 
