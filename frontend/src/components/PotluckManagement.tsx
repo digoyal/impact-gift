@@ -253,15 +253,9 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
       {items.length === 0 && (
         <div className="card">
           <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">
-              No potluck items yet. Add suggested items for guests to claim!
+            <p className="text-gray-500">
+              No potluck items yet. Use &ldquo;Add Suggested Item&rdquo; above to get started.
             </p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="btn btn-primary"
-            >
-              + Add First Suggested Item
-            </button>
           </div>
         </div>
       )}
