@@ -92,7 +92,12 @@ const EventPhotosUploader = ({
     } catch (error: unknown) {
       console.error('Upload error:', error);
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = (data?.error as string) || 'Failed to upload photos';
+      const code = data?.code as string | undefined;
+      const errorMsg =
+        (data?.error as string) ||
+        (code === 'CLOUDINARY_NOT_CONFIGURED'
+          ? 'Photo upload is not set up on this server yet (Cloudinary). Skip photos or add Cloudinary keys to backend/.env.'
+          : 'Failed to upload photos');
       toast.error(errorMsg);
     } finally {
       setUploading(false);

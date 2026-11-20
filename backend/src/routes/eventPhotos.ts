@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { upload, deleteImage, isCloudinaryConfigured } from '../services/cloudinaryService';
+import { upload, deleteImage, requireCloudinaryUpload } from '../services/cloudinaryService';
 import { query } from '../database/db';
 
 const router = Router();
@@ -9,14 +9,8 @@ const router = Router();
  * Upload event photos (supports multiple files)
  * POST /api/event-photos/upload
  */
-router.post('/upload', authenticate, upload.array('images', 10), async (req: AuthRequest, res: Response) => {
+router.post('/upload', authenticate, requireCloudinaryUpload, upload.array('images', 10), async (req: AuthRequest, res: Response) => {
   try {
-    if (!isCloudinaryConfigured()) {
-      return res.status(503).json({
-        error: 'Image upload service is not configured. Please contact support.'
-      });
-    }
-
     if (!req.files || (req.files as any[]).length === 0) {
       return res.status(400).json({ error: 'No image files provided' });
     }

@@ -52,6 +52,15 @@ if (missingRecommended.length > 0) {
   missingRecommended.forEach(varName => console.warn(`   - ${varName}`));
 }
 
+{
+  // After dotenv: avoid importing cloudinaryService before env is loaded
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { isCloudinaryConfigured } = require('./services/cloudinaryService');
+  if (!isCloudinaryConfigured()) {
+    console.warn('⚠️  Cloudinary not configured — event image / dress-code uploads will return 503 until CLOUDINARY_* is set in backend/.env');
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 

@@ -300,9 +300,18 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
       onImageUploaded(url, publicId);
       setSelectedPresetId(null);
       toast.success('Image uploaded successfully!');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload image');
+      const axiosData =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: Record<string, unknown> } }).response?.data
+          : undefined;
+      const msg =
+        (axiosData?.error as string) ||
+        (axiosData?.code === 'CLOUDINARY_NOT_CONFIGURED'
+          ? 'Image upload is not set up on this server (Cloudinary). Use the preset library or add CLOUDINARY_* to backend/.env.'
+          : 'Failed to upload image');
+      toast.error(msg);
       setPreview(null);
     } finally {
       setUploading(false);
