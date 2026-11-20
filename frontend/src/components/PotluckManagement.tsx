@@ -34,8 +34,8 @@ const PotluckItemsTable = ({
       <table className="min-w-[640px] w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
           <tr>
-            <th className="px-3 py-2 text-left">Item</th>
             <th className="px-3 py-2 text-left">Category</th>
+            <th className="px-3 py-2 text-left">Item</th>
             <th className="px-3 py-2 text-left w-14">Qty</th>
             {variant === 'unclaimed' ? (
               <th className="px-3 py-2 text-left">Status</th>
