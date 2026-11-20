@@ -242,20 +242,6 @@ const DetailsTab = ({
               When enabled, guests who RSVP'd as "Attending" will be visible to everyone viewing your event page
             </p>
 
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.potluck_enabled}
-                onChange={handleChange('potluck_enabled')}
-                className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <span className="ml-3 text-sm font-medium text-gray-700">
-                Enable potluck
-              </span>
-            </label>
-            <p className="text-xs text-gray-500 ml-8">
-              Let guests sign up to bring food items
-            </p>
           </div>
         </div>
 

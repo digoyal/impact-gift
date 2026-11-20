@@ -135,6 +135,21 @@ const ManageEvent = () => {
   useEffect(() => {
   }, [activeTab, guests, donations]);
 
+  // Potluck tab always on — enable on event when host opens the tab (API requires flag)
+  useEffect(() => {
+    const enablePotluck = async () => {
+      if (activeTab !== 'potluck' || !event || !slug || formData.potluck_enabled) return;
+      try {
+        await api.put(`/events/${slug}`, { potluck_enabled: true });
+        setFormData((prev) => ({ ...prev, potluck_enabled: true }));
+        setEvent((prev) => (prev ? { ...prev, potluck_enabled: true } : prev));
+      } catch (error: unknown) {
+        console.error('Failed to enable potluck:', error);
+      }
+    };
+    void enablePotluck();
+  }, [activeTab, event?.id, slug, formData.potluck_enabled]);
+
   // Fetch filter counts when communication tab is active
   useEffect(() => {
     const fetchFilterCounts = async () => {
@@ -746,22 +761,6 @@ const ManageEvent = () => {
     } catch (error: unknown) {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
       toast.error((data?.error as string) || 'Failed to save dress code');
-    } finally {
-      setSaveLoading(false);
-    }
-  };
-
-  const handleSavePotluckSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!event) return;
-    setSaveLoading(true);
-    try {
-      await api.put(`/events/${slug}`, { potluck_enabled: formData.potluck_enabled });
-      toast.success('Potluck settings saved');
-      await fetchEventData();
-    } catch (error: unknown) {
-      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      toast.error((data?.error as string) || 'Failed to save potluck settings');
     } finally {
       setSaveLoading(false);
     }
@@ -1446,15 +1445,7 @@ const ManageEvent = () => {
         </div>
       )}
 
-      {activeTab === 'potluck' && (
-        <PotluckTab
-          event={event}
-          potluckEnabled={formData.potluck_enabled}
-          onPotluckEnabledChange={(enabled) => setFormData({ ...formData, potluck_enabled: enabled })}
-          onSaveSettings={handleSavePotluckSettings}
-          saveLoading={saveLoading}
-        />
-      )}
+      {activeTab === 'potluck' && <PotluckTab event={event} />}
 
       {activeTab === 'cohosts' && <CoHostsTab eventId={event.id} />}
 
