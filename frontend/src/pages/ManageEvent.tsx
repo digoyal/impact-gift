@@ -758,8 +758,6 @@ const ManageEvent = () => {
     if (aHost !== bHost) return aHost ? -1 : 1;
     return 0;
   });
-  const totalDonations = donations.reduce((sum, d) => sum + Number(d.amount), 0);
-  const attendingCount = guests.filter(g => g.rsvp_status === 'attending').length;
   const impactGiftOn = isImpactGiftEnabled(event);
 
   const renderInviteStatusBadge = (guest: Guest, mobile = false) => {
@@ -1447,13 +1445,15 @@ const ManageEvent = () => {
                               <span className="text-gray-400">-</span>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {guest.has_donated ? (
-                              <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
+                          {impactGiftOn && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {guest.has_donated ? (
+                                <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
                             {!organizer && guest.invitation_sent && (
                               <button
@@ -1567,16 +1567,18 @@ const ManageEvent = () => {
                                 ) : '-'}
                               </div>
                             </div>
-                            <div>
-                              <div className="text-xs text-neutral-500 mb-1">Donated</div>
-                              <div className="font-medium">
-                                {guest.has_donated ? (
-                                  <span className="text-green-600">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                                ) : (
-                                  <span className="text-neutral-400">-</span>
-                                )}
+                            {impactGiftOn && (
+                              <div>
+                                <div className="text-xs text-neutral-500 mb-1">Donated</div>
+                                <div className="font-medium">
+                                  {guest.has_donated ? (
+                                    <span className="text-green-600">${Number(guest.donated_amount || 0).toFixed(2)}</span>
+                                  ) : (
+                                    <span className="text-neutral-400">-</span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
 
                           {guest.rsvp_comment && (
