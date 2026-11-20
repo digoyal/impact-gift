@@ -49,8 +49,8 @@ const PotluckItemsTable = ({
         <tbody className="divide-y divide-gray-100 bg-white">
           {items.map((item) => (
             <tr key={item.id} className={rowTint}>
-              <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap">{item.item_name}</td>
               <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{formatCategory(item.category)}</td>
+              <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap">{item.item_name}</td>
               <td className="px-3 py-2 text-gray-700">{item.quantity}</td>
               {variant === 'unclaimed' ? (
                 <td className="px-3 py-2 whitespace-nowrap">
@@ -186,25 +186,6 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
             >
               + Suggest Item
             </button>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            Add suggested items for guests to claim, or let guests add their own items
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="text-xs text-yellow-700 font-medium">Unclaimed</div>
-            <div className="text-2xl font-bold text-yellow-600">{suggestedUnclaimed.length}</div>
-          </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="text-xs text-green-700 font-medium">Claimed</div>
-            <div className="text-2xl font-bold text-green-600">{suggestedClaimed.length}</div>
-          </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="text-xs text-blue-700 font-medium">Guest Added</div>
-            <div className="text-2xl font-bold text-blue-600">{guestAdded.length}</div>
           </div>
         </div>
       </div>
