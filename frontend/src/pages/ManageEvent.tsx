@@ -838,10 +838,10 @@ const ManageEvent = () => {
   };
   const manageTabs: TabType[] = [
     'details',
+    'guests',
     'dresscode',
     'potluck',
     'charities',
-    'guests',
     'rsvp',
     'communication',
     'cohosts',
