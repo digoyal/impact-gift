@@ -11,6 +11,7 @@ import { isAxiosError, getErrorMessage } from '../utils/errors';
 const CreateEvent = () => {
   const [charities, setCharities] = useState<Charity[]>([]);
   const [loading, setLoading] = useState(false);
+  const [includeDressCode, setIncludeDressCode] = useState(false);
   const [impactGiftEnabled, setImpactGiftEnabled] = useState(false);
   const [selectedCharityIds, setSelectedCharityIds] = useState<number[]>([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -61,6 +62,14 @@ const CreateEvent = () => {
     }
   };
 
+  const handleIncludeDressCodeToggle = (enabled: boolean) => {
+    setIncludeDressCode(enabled);
+    if (!enabled) {
+      setFormData((prev) => ({ ...prev, dress_code: '' }));
+      setAttirePhotos([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -72,6 +81,7 @@ const CreateEvent = () => {
 
       const eventData: CreateEventInput = {
         ...formData,
+        dress_code: includeDressCode ? formData.dress_code || undefined : undefined,
         charity_ids: charityIds,
         start_date: formData.event_date,
         end_date: formData.event_date,
@@ -94,8 +104,8 @@ const CreateEvent = () => {
         }
       }
 
-      // Upload attire photos if any were selected
-      if (attirePhotos.length > 0) {
+      // Upload attire photos when dress code is included
+      if (includeDressCode && attirePhotos.length > 0) {
         try {
           for (const photo of attirePhotos) {
             await api.post('/event-photos/save', {
@@ -260,35 +270,52 @@ const CreateEvent = () => {
 
           {/* Dress Code */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Dress Code (Optional)</h3>
-
-            {/* Dress Code Text */}
-            <div className="mb-6">
-              <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
-                Dress Code Description
-              </label>
-              <input
-                id="dress_code"
-                type="text"
-                className="input"
-                placeholder="e.g., Western Casual, Indian Ethnic, Formal"
-                value={formData.dress_code}
-                onChange={(e) => setFormData({ ...formData, dress_code: e.target.value })}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Help guests dress appropriately for your event
-              </p>
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="include_dress_code"
+                  type="checkbox"
+                  checked={includeDressCode}
+                  onChange={(e) => handleIncludeDressCodeToggle(e.target.checked)}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="ml-3">
+                <label htmlFor="include_dress_code" className="font-medium text-gray-700">
+                  Include dress code
+                </label>
+                <p className="text-sm text-gray-500">
+                  Add a description and example photos so guests know how to dress.
+                </p>
+              </div>
             </div>
 
-            {/* Dress Code Example Photos */}
-            <EventPhotosUploader
-              photos={attirePhotos}
-              onChange={setAttirePhotos}
-              category="attire"
-              maxPhotos={6}
-              label="Dress Code Example Photos"
-              helpText="Upload outfit examples, color schemes, or theme inspiration photos to help guests visualize the dress code"
-            />
+            {includeDressCode && (
+              <div className="mt-5 pl-0 sm:pl-7">
+                <div className="mb-6">
+                  <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
+                    Dress Code Description
+                  </label>
+                  <input
+                    id="dress_code"
+                    type="text"
+                    className="input"
+                    placeholder="e.g., Western Casual, Indian Ethnic, Formal"
+                    value={formData.dress_code}
+                    onChange={(e) => setFormData({ ...formData, dress_code: e.target.value })}
+                  />
+                </div>
+
+                <EventPhotosUploader
+                  photos={attirePhotos}
+                  onChange={setAttirePhotos}
+                  category="attire"
+                  maxPhotos={6}
+                  label="Dress Code Example Photos"
+                  helpText="Upload outfit examples, color schemes, or theme inspiration photos to help guests visualize the dress code"
+                />
+              </div>
+            )}
           </div>
 
           {/* Host Contact Info */}

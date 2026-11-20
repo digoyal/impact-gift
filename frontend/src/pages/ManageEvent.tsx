@@ -96,6 +96,7 @@ const ManageEvent = () => {
   });
   const [eventImage, setEventImage] = useState<{ url: string; publicId: string }>({ url: '', publicId: '' });
   const [attirePhotos, setAttirePhotos] = useState<EventPhoto[]>([]);
+  const [includeDressCode, setIncludeDressCode] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
   // Charities tab state
@@ -184,11 +185,16 @@ const ManageEvent = () => {
       setRsvpSummary(rsvpSummaryRes.data);
       setPendingCommitments(pendingCommitmentsRes.data.pending_count || 0);
 
-      // Process attire photos result
-      if (attireResult.data.success) {
-        setAttirePhotos(attireResult.data.photos);
-      }
+      const loadedAttirePhotos =
+        attireResult.data.success && Array.isArray(attireResult.data.photos)
+          ? attireResult.data.photos
+          : [];
+      setAttirePhotos(loadedAttirePhotos);
 
+      const hasDressCode =
+        !!(eventRes.data.dress_code && String(eventRes.data.dress_code).trim()) ||
+        loadedAttirePhotos.length > 0;
+      setIncludeDressCode(hasDressCode);
 
       // Populate form data for Event Details tab
       setFormData({
@@ -587,6 +593,14 @@ const ManageEvent = () => {
   };
 
   // Event Details tab handlers
+  const handleIncludeDressCodeToggle = (enabled: boolean) => {
+    setIncludeDressCode(enabled);
+    if (!enabled) {
+      setFormData((prev) => ({ ...prev, dress_code: '' }));
+      setAttirePhotos([]);
+    }
+  };
+
   const toggleCharity = (charityId: number) => {
     setSelectedCharityIds((prev) =>
       prev.includes(charityId)
@@ -604,6 +618,7 @@ const ManageEvent = () => {
     try {
       const eventData = {
         ...formData,
+        dress_code: includeDressCode ? formData.dress_code || null : null,
         charity_ids: selectedCharityIds,
         start_date: formData.event_date,
         end_date: formData.event_date,
@@ -624,9 +639,9 @@ const ManageEvent = () => {
         }
       }
 
-      // Save new attire photos
+      // Save new attire photos when dress code is included
       const newAttirePhotos = attirePhotos.filter(photo => !photo.id);
-      if (newAttirePhotos.length > 0) {
+      if (includeDressCode && newAttirePhotos.length > 0) {
         const photosToSave = newAttirePhotos.map(photo => ({
           imageUrl: photo.photo_url,
           publicId: photo.photo_public_id,
@@ -642,7 +657,7 @@ const ManageEvent = () => {
       }
 
       // Update captions for existing photos
-      const existingAttirePhotos = attirePhotos.filter(photo => photo.id);
+      const existingAttirePhotos = includeDressCode ? attirePhotos.filter(photo => photo.id) : [];
       for (const photo of existingAttirePhotos) {
         if (photo.id) {
           try {
@@ -1007,33 +1022,55 @@ const ManageEvent = () => {
                 />
               </div>
 
-              <div className="mb-6">
-                <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
-                  Dress Code Description
-                </label>
-                <input
-                  id="dress_code"
-                  type="text"
-                  className="input"
-                  placeholder="e.g., Western Casual, Indian Ethnic, Formal"
-                  value={formData.dress_code}
-                  onChange={(e) => setFormData({ ...formData, dress_code: e.target.value })}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Help guests dress appropriately for your event
-                </p>
-              </div>
+              <div className="border-t pt-4">
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="include_dress_code"
+                      type="checkbox"
+                      checked={includeDressCode}
+                      onChange={(e) => handleIncludeDressCodeToggle(e.target.checked)}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="ml-3">
+                    <label htmlFor="include_dress_code" className="font-medium text-gray-700">
+                      Include dress code
+                    </label>
+                    <p className="text-sm text-gray-500">
+                      Add a description and example photos so guests know how to dress.
+                    </p>
+                  </div>
+                </div>
 
-              {/* Dress Code Example Photos */}
-              <EventPhotosUploader
-                eventId={event?.id}
-                photos={attirePhotos}
-                onChange={setAttirePhotos}
-                category="attire"
-                maxPhotos={6}
-                label="Dress Code Example Photos"
-                helpText="Upload outfit examples, color schemes, or theme inspiration photos to help guests visualize the dress code"
-              />
+                {includeDressCode && (
+                  <div className="mt-5 pl-0 sm:pl-7">
+                    <div className="mb-6">
+                      <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
+                        Dress Code Description
+                      </label>
+                      <input
+                        id="dress_code"
+                        type="text"
+                        className="input"
+                        placeholder="e.g., Western Casual, Indian Ethnic, Formal"
+                        value={formData.dress_code}
+                        onChange={(e) => setFormData({ ...formData, dress_code: e.target.value })}
+                      />
+                    </div>
+
+                    <EventPhotosUploader
+                      eventId={event?.id}
+                      photos={attirePhotos}
+                      onChange={setAttirePhotos}
+                      category="attire"
+                      maxPhotos={6}
+                      label="Dress Code Example Photos"
+                      helpText="Upload outfit examples, color schemes, or theme inspiration photos to help guests visualize the dress code"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Settings */}

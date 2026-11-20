@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Event } from '../../types';
 import EventImageSelector from '../EventImageSelector';
 import EventPhotosUploader, { EventPhoto } from '../EventPhotosUploader';
@@ -44,6 +45,22 @@ const DetailsTab = ({
   saveLoading,
   onShowCancelModal
 }: DetailsTabProps) => {
+  const [includeDressCode, setIncludeDressCode] = useState(false);
+
+  useEffect(() => {
+    setIncludeDressCode(
+      !!(formData.dress_code?.trim()) || attirePhotos.length > 0
+    );
+  }, [event.id, formData.dress_code, attirePhotos.length]);
+
+  const handleIncludeDressCodeToggle = (enabled: boolean) => {
+    setIncludeDressCode(enabled);
+    if (!enabled) {
+      onFormDataChange({ ...formData, dress_code: '' });
+      onAttirePhotosChange([]);
+    }
+  };
+
   const handleChange = (field: keyof FormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -225,33 +242,55 @@ const DetailsTab = ({
             />
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
-              Dress Code Description
-            </label>
-            <input
-              id="dress_code"
-              type="text"
-              className="input"
-              placeholder="e.g., Western Casual, Indian Ethnic, Formal"
-              value={formData.dress_code}
-              onChange={handleChange('dress_code')}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Help guests dress appropriately for your event
-            </p>
-          </div>
+          <div className="border-t pt-4">
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="include_dress_code"
+                  type="checkbox"
+                  checked={includeDressCode}
+                  onChange={(e) => handleIncludeDressCodeToggle(e.target.checked)}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="ml-3">
+                <label htmlFor="include_dress_code" className="font-medium text-gray-700">
+                  Include dress code
+                </label>
+                <p className="text-sm text-gray-500">
+                  Add a description and example photos so guests know how to dress.
+                </p>
+              </div>
+            </div>
 
-          {/* Dress Code Example Photos */}
-          <EventPhotosUploader
-            eventId={event?.id}
-            photos={attirePhotos}
-            onChange={onAttirePhotosChange}
-            category="attire"
-            maxPhotos={6}
-            label="Dress Code Example Photos"
-            helpText="Upload outfit examples, color schemes, or theme inspiration photos to help guests visualize the dress code"
-          />
+            {includeDressCode && (
+              <div className="mt-5 pl-0 sm:pl-7">
+                <div className="mb-6">
+                  <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
+                    Dress Code Description
+                  </label>
+                  <input
+                    id="dress_code"
+                    type="text"
+                    className="input"
+                    placeholder="e.g., Western Casual, Indian Ethnic, Formal"
+                    value={formData.dress_code}
+                    onChange={handleChange('dress_code')}
+                  />
+                </div>
+
+                <EventPhotosUploader
+                  eventId={event?.id}
+                  photos={attirePhotos}
+                  onChange={onAttirePhotosChange}
+                  category="attire"
+                  maxPhotos={6}
+                  label="Dress Code Example Photos"
+                  helpText="Upload outfit examples, color schemes, or theme inspiration photos to help guests visualize the dress code"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Settings */}
