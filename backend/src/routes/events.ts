@@ -892,7 +892,7 @@ router.post('/:identifier/cancel', authenticate, async (req: AuthRequest, res: R
       `SELECT e.*, u.email as organizer_email, u.first_name, u.last_name
        FROM events e
        JOIN users u ON e.user_id = u.id
-       WHERE (e.id = $1 OR e.slug = $1) AND e.is_active = true`,
+       WHERE (e.id::text = $1 OR e.slug = $1) AND e.is_active = true`,
       [identifier]
     );
 
@@ -932,11 +932,14 @@ router.post('/:identifier/cancel', authenticate, async (req: AuthRequest, res: R
 
     const guests = guestsResult.rows;
 
-    // Send cancellation emails (using Resend if configured)
-    const { Resend } = await import('resend');
-    const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+    // Send cancellation emails when Resend is configured (failures do not roll back cancel)
+    let notifiedGuests = 0;
+    const { isResendConfigured, getResendFromEmail } = await import('../utils/resendConfig');
 
-    if (resend && guests.length > 0) {
+    if (isResendConfigured() && guests.length > 0) {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY!);
+      const fromEmail = getResendFromEmail();
       const organizerName = `${event.first_name} ${event.last_name}`;
       const reasonText = cancellation_reason
         ? `\n\nReason: ${cancellation_reason}`
@@ -958,25 +961,26 @@ ${organizerName}`;
 
         try {
           await resend.emails.send({
-            from: 'Impact Gift <noreply@giftwithimpact.com>',
+            from: fromEmail,
             to: guest.email,
             replyTo: event.organizer_email,
             subject: `Event Cancelled: ${event.title}`,
             text: emailBody,
             html: emailBody.replace(/\n/g, '<br>')
           });
+          notifiedGuests++;
         } catch (emailError) {
           console.error(`Failed to send cancellation email to ${guest.email}:`, emailError);
         }
       }
 
-      console.log(`[CANCEL EVENT] Sent cancellation emails to ${guests.length} guests for event ${event.id}`);
+      console.log(`[CANCEL EVENT] Sent cancellation emails to ${notifiedGuests}/${guests.length} guests for event ${event.id}`);
     }
 
     res.json({
       success: true,
       message: 'Event cancelled successfully',
-      notified_guests: guests.length
+      notified_guests: notifiedGuests
     });
   } catch (error) {
     console.error('Error cancelling event:', error);
