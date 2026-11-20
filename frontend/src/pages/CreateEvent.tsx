@@ -11,6 +11,7 @@ import { isAxiosError, getErrorMessage } from '../utils/errors';
 const CreateEvent = () => {
   const [charities, setCharities] = useState<Charity[]>([]);
   const [loading, setLoading] = useState(false);
+  const [impactGiftEnabled, setImpactGiftEnabled] = useState(false);
   const [selectedCharityIds, setSelectedCharityIds] = useState<number[]>([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [eventImage, setEventImage] = useState<{ url: string; publicId: string }>({ url: '', publicId: '' });
@@ -54,15 +55,25 @@ const CreateEvent = () => {
     );
   };
 
+  const handleImpactGiftToggle = (enabled: boolean) => {
+    setImpactGiftEnabled(enabled);
+    if (!enabled) {
+      setSelectedCharityIds([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setLoading(true);
 
     try {
+      const charityIds =
+        impactGiftEnabled && selectedCharityIds.length > 0 ? selectedCharityIds : undefined;
+
       const eventData: CreateEventInput = {
         ...formData,
-        charity_ids: selectedCharityIds.length > 0 ? selectedCharityIds : undefined,
+        charity_ids: charityIds,
         start_date: formData.event_date,
         end_date: formData.event_date,
         potluck_enabled: formData.potluck_enabled
@@ -352,55 +363,79 @@ const CreateEvent = () => {
             </p>
           </div>
 
-          {/* Select Multiple Charities */}
+          {/* Impact Gift (charitable giving) */}
           <div className="border-t pt-6">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Select Charities (Optional)
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowRequestModal(true)}
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-              >
-                + Request a Charity
-              </button>
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="impact_gift_enabled"
+                  type="checkbox"
+                  checked={impactGiftEnabled}
+                  onChange={(e) => handleImpactGiftToggle(e.target.checked)}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="ml-3">
+                <label htmlFor="impact_gift_enabled" className="font-medium text-gray-700">
+                  Enable Impact Gift
+                </label>
+                <p className="text-sm text-gray-500">
+                  Let guests donate to charities you choose instead of bringing traditional gifts.
+                </p>
+              </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-3 max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4">
-              {charities.map((charity) => (
-                <div
-                  key={charity.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedCharityIds.includes(charity.id)
-                      ? 'border-primary-600 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => toggleCharity(charity.id)}
-                >
-                  <div className="flex items-start">
-                    <input
-                      type="checkbox"
-                      checked={selectedCharityIds.includes(charity.id)}
-                      onChange={() => toggleCharity(charity.id)}
-                      className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-medium text-gray-900">{charity.name}</h3>
-                        <span className="text-xs text-gray-500">{charity.category}</span>
-                      </div>
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                        {charity.description}
-                      </p>
-                    </div>
-                  </div>
+
+            {impactGiftEnabled && (
+              <div className="mt-5 pl-0 sm:pl-7">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select Charities (Optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowRequestModal(true)}
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    + Request a Charity
+                  </button>
                 </div>
-              ))}
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              {selectedCharityIds.length} {selectedCharityIds.length === 1 ? 'charity' : 'charities'} selected
-            </p>
+                <div className="grid md:grid-cols-2 gap-3 max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                  {charities.map((charity) => (
+                    <div
+                      key={charity.id}
+                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedCharityIds.includes(charity.id)
+                          ? 'border-primary-600 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => toggleCharity(charity.id)}
+                    >
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          checked={selectedCharityIds.includes(charity.id)}
+                          onChange={() => toggleCharity(charity.id)}
+                          className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium text-gray-900">{charity.name}</h3>
+                            <span className="text-xs text-gray-500">{charity.category}</span>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {charity.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  {selectedCharityIds.length} {selectedCharityIds.length === 1 ? 'charity' : 'charities'} selected
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Potluck Option */}
