@@ -1,6 +1,9 @@
 import { Guest } from '../../types';
 import GuestListTable from './GuestListTable';
 
+const compactInputClass =
+  'input !min-h-0 h-9 py-1.5 px-3 text-sm w-full';
+
 interface GuestsTabProps {
   ownerEmail: string | null;
   guests: Guest[];
@@ -61,56 +64,57 @@ const GuestsTab = ({
   additionalGuestsSavingId,
 }: GuestsTabProps) => {
   return (
-    <div className="space-y-6">
-      <div className="card">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Quick Add Guests</h3>
-            <p className="text-sm text-gray-600 mt-1">Upload a CSV, paste emails, or import from past events</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <label className="btn btn-secondary cursor-pointer">
-              Upload CSV
+    <div className="space-y-4">
+      <div className="card !p-4 sm:!p-5 space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <h3 className="text-base font-semibold text-neutral-900 shrink-0">Add guests</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="btn btn-secondary btn-sm cursor-pointer whitespace-nowrap">
+              CSV
               <input type="file" accept=".csv" onChange={onCSVUpload} className="hidden" />
             </label>
-            <button type="button" onClick={onOpenBulkImport} className="btn btn-secondary">
-              Paste Email List
+            <button type="button" onClick={onOpenBulkImport} className="btn btn-secondary btn-sm whitespace-nowrap">
+              Paste list
             </button>
-            <button type="button" onClick={onOpenMasterList} className="btn btn-secondary">
-              Import from Past Events
+            <button type="button" onClick={onOpenMasterList} className="btn btn-secondary btn-sm whitespace-nowrap">
+              Past events
             </button>
           </div>
         </div>
-      </div>
 
-      <div className="card">
-        <h3 className="text-lg font-semibold mb-4">Add Guest</h3>
-        <form onSubmit={onAddGuest} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input
-                type="email"
-                required
-                className="input"
-                placeholder="friend@example.com"
-                value={guestEmail}
-                onChange={(e) => onGuestEmailChange(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name (Optional)</label>
-              <input
-                type="text"
-                className="input"
-                placeholder="John Doe"
-                value={guestName}
-                onChange={(e) => onGuestNameChange(e.target.value)}
-              />
-            </div>
+        <form
+          onSubmit={onAddGuest}
+          className="flex flex-col gap-2 border-t border-neutral-200 pt-3 sm:flex-row sm:items-end sm:gap-2"
+        >
+          <div className="min-w-0 flex-1">
+            <label htmlFor="guest-add-email" className="mb-0.5 block text-xs font-medium text-neutral-600">
+              Email *
+            </label>
+            <input
+              id="guest-add-email"
+              type="email"
+              required
+              className={compactInputClass}
+              placeholder="friend@example.com"
+              value={guestEmail}
+              onChange={(e) => onGuestEmailChange(e.target.value)}
+            />
           </div>
-          <button type="submit" className="btn btn-primary">
-            Add Guest
+          <div className="min-w-0 flex-1 sm:max-w-[12rem]">
+            <label htmlFor="guest-add-name" className="mb-0.5 block text-xs font-medium text-neutral-600">
+              Name
+            </label>
+            <input
+              id="guest-add-name"
+              type="text"
+              className={compactInputClass}
+              placeholder="Optional"
+              value={guestName}
+              onChange={(e) => onGuestNameChange(e.target.value)}
+            />
+          </div>
+          <button type="submit" className="btn btn-primary btn-sm w-full shrink-0 sm:w-auto sm:min-w-[5.5rem]">
+            Add
           </button>
         </form>
       </div>
