@@ -1,31 +1,50 @@
+import { FormEvent } from 'react';
 import { Event } from '../../types';
 import PotluckManagement from '../PotluckManagement';
 
 interface PotluckTabProps {
   event: Event;
-  onSwitchToDetails: () => void;
+  potluckEnabled: boolean;
+  onPotluckEnabledChange: (enabled: boolean) => void;
+  onSaveSettings: (e: FormEvent) => void;
+  saveLoading: boolean;
 }
 
-const PotluckTab = ({ event, onSwitchToDetails }: PotluckTabProps) => {
+const PotluckTab = ({
+  event,
+  potluckEnabled,
+  onPotluckEnabledChange,
+  onSaveSettings,
+  saveLoading,
+}: PotluckTabProps) => {
   return (
     <div className="space-y-6">
-      {event.potluck_enabled ? (
+      <div className="card">
+        <form onSubmit={onSaveSettings} className="space-y-4">
+          <h3 className="text-xl font-semibold text-gray-900">Potluck</h3>
+          <p className="text-sm text-gray-600">
+            Let guests sign up to bring food, drinks, or other items.
+          </p>
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={potluckEnabled}
+              onChange={(e) => onPotluckEnabledChange(e.target.checked)}
+              className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <span className="ml-3 text-sm font-medium text-gray-700">Enable potluck for this event</span>
+          </label>
+          <button type="submit" disabled={saveLoading} className="btn btn-primary">
+            {saveLoading ? 'Saving...' : 'Save Potluck Settings'}
+          </button>
+        </form>
+      </div>
+
+      {potluckEnabled ? (
         <PotluckManagement eventId={event.id} />
       ) : (
-        <div className="card">
-          <div className="text-center py-8">
-            <div className="text-4xl mb-4">🍽️</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Potluck Not Enabled</h3>
-            <p className="text-gray-600 mb-4">
-              Enable the potluck feature to let guests sign up to bring food and drinks.
-            </p>
-            <button
-              onClick={onSwitchToDetails}
-              className="btn btn-primary"
-            >
-              Go to Event Details
-            </button>
-          </div>
+        <div className="card text-sm text-gray-600">
+          Enable potluck above to manage suggested items and guest sign-ups.
         </div>
       )}
     </div>

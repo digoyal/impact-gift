@@ -1,7 +1,7 @@
 import type { Event, Guest } from '../types';
 
-export function getEventOwnerEmail(event: Pick<Event, 'owner_email' | 'user_email'> | null | undefined): string | null {
-  const email = event?.owner_email || event?.user_email;
+export function getEventOwnerEmail(event: Pick<Event, 'owner_email'> | null | undefined): string | null {
+  const email = event?.owner_email;
   return email ? email.toLowerCase() : null;
 }
 

@@ -5,12 +5,13 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Event, Guest, Donation, RSVPSummaryResponse, Charity } from '../types';
 import { EventPhoto } from '../components/EventPhotosUploader';
-import CharitiesTab from '../components/manage-event/CharitiesTab';
+import DressCodeTab from '../components/manage-event/DressCodeTab';
+import ImpactGiftTab from '../components/manage-event/ImpactGiftTab';
+import CoHostsTab from '../components/manage-event/CoHostsTab';
 import RSVPTab from '../components/manage-event/RSVPTab';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import ProgressTab from '../components/manage-event/ProgressTab';
 import EventImageSelector from '../components/EventImageSelector';
-import EventPhotosUploader from '../components/EventPhotosUploader';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { isImpactGiftEnabled } from '../utils/impactGift';
 import {
@@ -31,7 +32,16 @@ const ManageEvent = () => {
   const [rsvpSummary, setRsvpSummary] = useState<RSVPSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  type TabType = 'details' | 'charities' | 'guests' | 'progress' | 'rsvp' | 'potluck' | 'communication';
+  type TabType =
+    | 'details'
+    | 'dresscode'
+    | 'potluck'
+    | 'charities'
+    | 'guests'
+    | 'progress'
+    | 'cohosts'
+    | 'rsvp'
+    | 'communication';
   // Set initial tab from location state or default to 'details'
   const initialTab = (location.state as { tab?: TabType })?.tab || 'details';
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
@@ -109,6 +119,7 @@ const ManageEvent = () => {
   // Charities tab state
   const [charities, setCharities] = useState<Charity[]>([]);
   const [selectedCharityIds, setSelectedCharityIds] = useState<number[]>([]);
+  const [impactGiftEnabled, setImpactGiftEnabled] = useState(false);
 
   useEffect(() => {
     if (!slug) {
@@ -121,13 +132,6 @@ const ManageEvent = () => {
 
   useEffect(() => {
   }, [activeTab, guests, donations]);
-
-  useEffect(() => {
-    if (!event) return;
-    if (!isImpactGiftEnabled(event) && (activeTab === 'charities' || activeTab === 'progress')) {
-      setActiveTab('details');
-    }
-  }, [event, activeTab]);
 
   // Fetch filter counts when communication tab is active
   useEffect(() => {
@@ -168,6 +172,7 @@ const ManageEvent = () => {
       ]);
 
       setEvent(eventRes.data);
+      setImpactGiftEnabled(eventRes.data.impact_gift_enabled === true);
       setCharities(charitiesResult.data.charities);
 
       // Now fetch all event-specific data in parallel using event ID
@@ -642,7 +647,35 @@ const ManageEvent = () => {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const persistAttirePhotos = async () => {
+    if (!event) return;
+    const newAttirePhotos = attirePhotos.filter((photo) => !photo.id);
+    if (includeDressCode && newAttirePhotos.length > 0) {
+      const photosToSave = newAttirePhotos.map((photo) => ({
+        imageUrl: photo.photo_url,
+        publicId: photo.photo_public_id,
+        category: 'attire',
+        caption: photo.caption || '',
+      }));
+      try {
+        await api.post(`/event-photos/event/${event.id}`, { photos: photosToSave });
+      } catch (photoError) {
+        console.error('Error saving attire photos:', photoError);
+      }
+    }
+    const existingAttirePhotos = includeDressCode ? attirePhotos.filter((photo) => photo.id) : [];
+    for (const photo of existingAttirePhotos) {
+      if (photo.id) {
+        try {
+          await api.put(`/event-photos/${photo.id}/caption`, { caption: photo.caption || '' });
+        } catch (captionError: unknown) {
+          console.error('Error updating photo caption:', captionError);
+        }
+      }
+    }
+  };
+
+  const handleSaveDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
 
@@ -651,64 +684,83 @@ const ManageEvent = () => {
     try {
       const eventData = {
         ...formData,
-        dress_code: includeDressCode ? formData.dress_code || null : null,
-        charity_ids: selectedCharityIds,
         start_date: formData.event_date,
         end_date: formData.event_date,
-        potluck_enabled: formData.potluck_enabled
       };
 
       await api.put(`/events/${slug}`, eventData);
 
-      // Upload event image if changed
       if (eventImage.url && eventImage.url !== event.event_image_url) {
         try {
           await api.put(`/event-images/event/${event.id}`, {
             imageUrl: eventImage.url,
-            publicId: eventImage.publicId
+            publicId: eventImage.publicId,
           });
         } catch (imgError) {
           console.error('Failed to save event image:', imgError);
         }
       }
 
-      // Save new attire photos when dress code is included
-      const newAttirePhotos = attirePhotos.filter(photo => !photo.id);
-      if (includeDressCode && newAttirePhotos.length > 0) {
-        const photosToSave = newAttirePhotos.map(photo => ({
-          imageUrl: photo.photo_url,
-          publicId: photo.photo_public_id,
-          category: 'attire',
-          caption: photo.caption || ''
-        }));
-
-        try {
-          await api.post(`/event-photos/event/${event.id}`, { photos: photosToSave });
-        } catch (photoError) {
-          console.error('Error saving attire photos:', photoError);
-        }
-      }
-
-      // Update captions for existing photos
-      const existingAttirePhotos = includeDressCode ? attirePhotos.filter(photo => photo.id) : [];
-      for (const photo of existingAttirePhotos) {
-        if (photo.id) {
-          try {
-            await api.put(`/event-photos/${photo.id}/caption`, { caption: photo.caption || '' });
-          } catch (captionError: unknown) {
-            console.error('Error updating photo caption:', captionError);
-          }
-        }
-      }
-
       toast.success('Event updated successfully!');
-
-      // Refresh event data
       await fetchEventData();
     } catch (error: unknown) {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = data?.error as string || 'Failed to update event';
+      const errorMsg = (data?.error as string) || 'Failed to update event';
       toast.error(errorMsg);
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleSaveDressCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!event) return;
+    setSaveLoading(true);
+    try {
+      await api.put(`/events/${slug}`, {
+        dress_code: includeDressCode ? formData.dress_code || null : null,
+      });
+      await persistAttirePhotos();
+      toast.success('Dress code saved');
+      await fetchEventData();
+    } catch (error: unknown) {
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      toast.error((data?.error as string) || 'Failed to save dress code');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleSavePotluckSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!event) return;
+    setSaveLoading(true);
+    try {
+      await api.put(`/events/${slug}`, { potluck_enabled: formData.potluck_enabled });
+      toast.success('Potluck settings saved');
+      await fetchEventData();
+    } catch (error: unknown) {
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      toast.error((data?.error as string) || 'Failed to save potluck settings');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleSaveImpactGift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!event) return;
+    setSaveLoading(true);
+    try {
+      await api.put(`/events/${slug}`, {
+        impact_gift_enabled: impactGiftEnabled,
+        charity_ids: impactGiftEnabled ? selectedCharityIds : [],
+      });
+      toast.success('Impact Gift settings saved');
+      await fetchEventData();
+    } catch (error: unknown) {
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      toast.error((data?.error as string) || 'Failed to save Impact Gift settings');
     } finally {
       setSaveLoading(false);
     }
@@ -784,9 +836,17 @@ const ManageEvent = () => {
       </span>
     );
   };
-  const manageTabs: TabType[] = impactGiftOn
-    ? ['details', 'charities', 'guests', 'rsvp', 'communication', 'potluck', 'progress']
-    : ['details', 'guests', 'rsvp', 'communication', 'potluck'];
+  const manageTabs: TabType[] = [
+    'details',
+    'dresscode',
+    'potluck',
+    'charities',
+    'guests',
+    'rsvp',
+    'communication',
+    'cohosts',
+    'progress',
+  ];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -876,11 +936,13 @@ const ManageEvent = () => {
                 }`}
               >
                 {tab === 'details' && 'Event Details'}
-                {tab === 'charities' && 'Charities'}
+                {tab === 'dresscode' && 'Dress Code'}
+                {tab === 'potluck' && 'Potluck'}
+                {tab === 'charities' && 'Impact Gift'}
                 {tab === 'guests' && 'Guest List'}
                 {tab === 'rsvp' && 'RSVP Summary'}
                 {tab === 'communication' && 'Message Guests'}
-                {tab === 'potluck' && 'Potluck'}
+                {tab === 'cohosts' && 'Co-hosts'}
                 {tab === 'progress' && 'Progress & Donations'}
               </button>
             ))}
@@ -891,7 +953,7 @@ const ManageEvent = () => {
       {/* Event Details Tab */}
       {activeTab === 'details' && (
         <div className="card">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSaveDetails} className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Edit Event Details</h3>
 
             {/* Event Image */}
@@ -1061,55 +1123,6 @@ const ManageEvent = () => {
                 />
               </div>
 
-              <div className="border-t pt-4">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="include_dress_code"
-                      type="checkbox"
-                      checked={includeDressCode}
-                      onChange={(e) => handleIncludeDressCodeToggle(e.target.checked)}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                  </div>
-                  <div className="ml-3">
-                    <label htmlFor="include_dress_code" className="font-medium text-gray-700">
-                      Include dress code
-                    </label>
-                    <p className="text-sm text-gray-500">
-                      Add a description and example photos so guests know how to dress.
-                    </p>
-                  </div>
-                </div>
-
-                {includeDressCode && (
-                  <div className="mt-5 pl-0 sm:pl-7">
-                    <div className="mb-6">
-                      <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700 mb-1">
-                        What to wear
-                      </label>
-                      <input
-                        id="dress_code"
-                        type="text"
-                        className="input"
-                        placeholder="e.g., Western Casual, Indian Ethnic, Formal"
-                        value={formData.dress_code}
-                        onChange={(e) => setFormData({ ...formData, dress_code: e.target.value })}
-                      />
-                    </div>
-
-                    <EventPhotosUploader
-                      eventId={event?.id}
-                      photos={attirePhotos}
-                      onChange={setAttirePhotos}
-                      category="attire"
-                      maxPhotos={6}
-                      label="Example photos"
-                      helpText="Upload outfit examples, color schemes, or theme inspiration so guests can see what to wear"
-                    />
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Settings */}
@@ -1130,21 +1143,6 @@ const ManageEvent = () => {
                 </label>
                 <p className="text-xs text-gray-500 ml-8">
                   When enabled, guests who RSVP'd as "Attending" will be visible to everyone viewing your event page
-                </p>
-
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.potluck_enabled}
-                    onChange={(e) => setFormData({ ...formData, potluck_enabled: e.target.checked })}
-                    className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <span className="ml-3 text-sm font-medium text-gray-700">
-                    Enable potluck
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500 ml-8">
-                  Let guests sign up to bring food items
                 </p>
               </div>
             </div>
@@ -1181,13 +1179,28 @@ const ManageEvent = () => {
         </div>
       )}
 
-      {/* Charities Tab */}
-      {impactGiftOn && activeTab === 'charities' && (
-        <CharitiesTab
+      {activeTab === 'dresscode' && (
+        <DressCodeTab
+          includeDressCode={includeDressCode}
+          onIncludeDressCodeChange={handleIncludeDressCodeToggle}
+          dressCode={formData.dress_code}
+          onDressCodeChange={(value) => setFormData({ ...formData, dress_code: value })}
+          attirePhotos={attirePhotos}
+          onAttirePhotosChange={setAttirePhotos}
+          eventId={event.id}
+          onSave={handleSaveDressCode}
+          saveLoading={saveLoading}
+        />
+      )}
+
+      {activeTab === 'charities' && (
+        <ImpactGiftTab
+          enabled={impactGiftEnabled}
+          onEnabledChange={setImpactGiftEnabled}
           charities={charities}
           selectedCharityIds={selectedCharityIds}
           onToggleCharity={toggleCharity}
-          onSave={handleSubmit}
+          onSave={handleSaveImpactGift}
           saveLoading={saveLoading}
           onCharitiesRefresh={setCharities}
         />
@@ -1802,20 +1815,33 @@ const ManageEvent = () => {
         </div>
       )}
 
-      {/* Potluck Tab */}
       {activeTab === 'potluck' && (
-        <PotluckTab event={event} onSwitchToDetails={() => setActiveTab('details')} />
+        <PotluckTab
+          event={event}
+          potluckEnabled={formData.potluck_enabled}
+          onPotluckEnabledChange={(enabled) => setFormData({ ...formData, potluck_enabled: enabled })}
+          onSaveSettings={handleSavePotluckSettings}
+          saveLoading={saveLoading}
+        />
       )}
 
+      {activeTab === 'cohosts' && <CoHostsTab eventId={event.id} />}
+
       {/* Progress Tab */}
-      {impactGiftOn && activeTab === 'progress' && (
-        <ProgressTab
-          event={event}
-          donations={donations}
-          pendingCommitments={pendingCommitments}
-          sendingReminders={sendingReminders}
-          onSendReminders={sendDonationReminders}
-        />
+      {activeTab === 'progress' && (
+        impactGiftOn ? (
+          <ProgressTab
+            event={event}
+            donations={donations}
+            pendingCommitments={pendingCommitments}
+            sendingReminders={sendingReminders}
+            onSendReminders={sendDonationReminders}
+          />
+        ) : (
+          <div className="card text-sm text-gray-600">
+            Enable Impact Gift and choose charities to track donations and send reminders.
+          </div>
+        )
       )}
 
       {/* Cancel Event Modal */}
