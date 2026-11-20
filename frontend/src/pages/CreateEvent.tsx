@@ -363,6 +363,29 @@ const CreateEvent = () => {
             </p>
           </div>
 
+          {/* Potluck Option */}
+          <div className="border-t pt-6">
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="potluck_enabled"
+                  type="checkbox"
+                  checked={formData.potluck_enabled}
+                  onChange={(e) => setFormData({ ...formData, potluck_enabled: e.target.checked })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="ml-3">
+                <label htmlFor="potluck_enabled" className="font-medium text-gray-700">
+                  Enable Potluck
+                </label>
+                <p className="text-sm text-gray-500">
+                  Allow guests to sign up to bring food, drinks, or other items to your event
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Impact Gift (charitable giving) */}
           <div className="border-t pt-6">
             <div className="flex items-start">
@@ -436,29 +459,6 @@ const CreateEvent = () => {
                 </p>
               </div>
             )}
-          </div>
-
-          {/* Potluck Option */}
-          <div className="border-t pt-6">
-            <div className="flex items-start">
-              <div className="flex items-center h-5">
-                <input
-                  id="potluck_enabled"
-                  type="checkbox"
-                  checked={formData.potluck_enabled}
-                  onChange={(e) => setFormData({ ...formData, potluck_enabled: e.target.checked })}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-              </div>
-              <div className="ml-3">
-                <label htmlFor="potluck_enabled" className="font-medium text-gray-700">
-                  Enable Potluck
-                </label>
-                <p className="text-sm text-gray-500">
-                  Allow guests to sign up to bring food, drinks, or other items to your event
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Submit */}
