@@ -931,7 +931,7 @@ const ManageEvent = () => {
               >
                 {tab === 'details' && 'Event Details'}
                 {tab === 'dresscode' && 'Dress Code'}
-                {tab === 'potluck' && 'Potluck'}
+                {tab === 'potluck' && 'Suggest items for guests to bring'}
                 {tab === 'charities' && 'Impact Gift'}
                 {tab === 'guests' && 'Guest List'}
                 {tab === 'rsvp' && 'RSVP Summary'}

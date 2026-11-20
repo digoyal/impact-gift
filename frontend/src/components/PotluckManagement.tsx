@@ -163,7 +163,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
   if (loading) {
     return (
       <div className="text-center py-4">
-        <p className="text-gray-600">Loading potluck items...</p>
+        <p className="text-gray-600">Loading suggested items...</p>
       </div>
     );
   }
@@ -177,7 +177,9 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
       {/* Header with Add Button */}
       <div className="card !p-4 sm:!p-5">
         <div className="flex flex-nowrap items-center justify-between gap-2">
-            <h3 className="text-base font-semibold min-w-0 truncate">Potluck</h3>
+            <h3 className="text-base font-semibold min-w-0 truncate" title="Suggest items for guests to bring">
+              Suggest items for guests to bring
+            </h3>
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
@@ -231,7 +233,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
         <div className="card !p-4 sm:!p-5">
           <div className="text-center py-5 text-sm">
             <p className="text-gray-500">
-              No potluck items yet. Use &ldquo;Suggest Item&rdquo; above to get started.
+              No items yet. Use &ldquo;Suggest Item&rdquo; above to get started.
             </p>
           </div>
         </div>
