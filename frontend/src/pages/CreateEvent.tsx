@@ -85,7 +85,8 @@ const CreateEvent = () => {
         charity_ids: charityIds,
         start_date: formData.event_date,
         end_date: formData.event_date,
-        potluck_enabled: formData.potluck_enabled
+        potluck_enabled: formData.potluck_enabled,
+        impact_gift_enabled: impactGiftEnabled
       };
 
       const response = await api.post('/events', eventData);

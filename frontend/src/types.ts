@@ -54,6 +54,7 @@ export interface Event {
   is_active: boolean;
   show_guest_list?: boolean;
   potluck_enabled?: boolean;
+  impact_gift_enabled?: boolean;
   template_id?: number;
   theme_id?: number;
   custom_colors?: any;
@@ -120,6 +121,7 @@ export interface CreateEventInput {
   charity_ids?: number[];
   goal_amount?: number;
   potluck_enabled?: boolean;
+  impact_gift_enabled?: boolean;
   template_id?: number;
   theme_id?: number;
 }

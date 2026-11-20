@@ -13,6 +13,7 @@ import ProgressTab from '../components/manage-event/ProgressTab';
 import EventImageSelector from '../components/EventImageSelector';
 import EventPhotosUploader from '../components/EventPhotosUploader';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
+import { isImpactGiftEnabled } from '../utils/impactGift';
 
 const ManageEvent = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -114,6 +115,13 @@ const ManageEvent = () => {
 
   useEffect(() => {
   }, [activeTab, guests, donations]);
+
+  useEffect(() => {
+    if (!event) return;
+    if (!isImpactGiftEnabled(event) && (activeTab === 'charities' || activeTab === 'progress')) {
+      setActiveTab('details');
+    }
+  }, [event, activeTab]);
 
   // Fetch filter counts when communication tab is active
   useEffect(() => {
@@ -717,6 +725,10 @@ const ManageEvent = () => {
   const pendingInvites = guests.filter(g => !g.invitation_sent).length;
   const totalDonations = donations.reduce((sum, d) => sum + Number(d.amount), 0);
   const attendingCount = guests.filter(g => g.rsvp_status === 'attending').length;
+  const impactGiftOn = isImpactGiftEnabled(event);
+  const manageTabs: TabType[] = impactGiftOn
+    ? ['details', 'charities', 'guests', 'rsvp', 'communication', 'cohosts', 'potluck', 'progress']
+    : ['details', 'guests', 'rsvp', 'communication', 'cohosts', 'potluck'];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -790,7 +802,7 @@ const ManageEvent = () => {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
+      <div className={`grid grid-cols-1 gap-4 mb-8 ${impactGiftOn ? 'md:grid-cols-6' : 'md:grid-cols-4'}`}>
         <div className="card">
           <div className="text-caption">Total Guests</div>
           <div className="text-2xl font-bold text-neutral-900">{guests.length}</div>
@@ -809,21 +821,25 @@ const ManageEvent = () => {
             {rsvpSummary?.summary.total_attending_headcount || attendingCount}
           </div>
         </div>
-        <div className="card">
-          <div className="text-caption">Donations</div>
-          <div className="text-2xl font-bold text-green-600">{donations.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-caption">Total Raised</div>
-          <div className="text-2xl font-bold text-green-600">${totalDonations.toFixed(2)}</div>
-        </div>
+        {impactGiftOn && (
+          <>
+            <div className="card">
+              <div className="text-caption">Donations</div>
+              <div className="text-2xl font-bold text-green-600">{donations.length}</div>
+            </div>
+            <div className="card">
+              <div className="text-caption">Total Raised</div>
+              <div className="text-2xl font-bold text-green-600">${totalDonations.toFixed(2)}</div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Tabs */}
       <div className="border-b border-neutral-200 mb-6 -mx-4 sm:mx-0">
         <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
           <nav className="-mb-px flex space-x-2 sm:space-x-6 md:space-x-8">
-            {(['details', 'charities', 'guests', 'rsvp', 'communication', 'cohosts', 'potluck', 'progress'] as const).map((tab) => (
+            {manageTabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -1143,7 +1159,7 @@ const ManageEvent = () => {
       )}
 
       {/* Charities Tab */}
-      {activeTab === 'charities' && (
+      {impactGiftOn && activeTab === 'charities' && (
         <CharitiesTab
           charities={charities}
           selectedCharityIds={selectedCharityIds}
@@ -1778,7 +1794,7 @@ const ManageEvent = () => {
       )}
 
       {/* Progress Tab */}
-      {activeTab === 'progress' && (
+      {impactGiftOn && activeTab === 'progress' && (
         <ProgressTab
           event={event}
           donations={donations}

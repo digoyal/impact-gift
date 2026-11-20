@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import FavoriteCharities from '../components/FavoriteCharities';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
+import { isImpactGiftEnabled } from '../utils/impactGift';
 
 interface Invitation {
   id: number;
@@ -400,7 +401,7 @@ const Dashboard = () => {
                       </div>
                     )}
                     <div className="flex items-center gap-3 mb-2">
-                      {event.charities && event.charities.length > 0 && (
+                      {isImpactGiftEnabled(event) && event.charities && event.charities.length > 0 && (
                         <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm shadow-soft flex-shrink-0">
                           {getCharityInitials(event.charities[0].name)}
                         </div>
@@ -414,7 +415,7 @@ const Dashboard = () => {
                             <span className="badge badge-primary text-xs flex-shrink-0">Co-Host</span>
                           )}
                         </div>
-                        {event.charities && event.charities.length > 0 && (
+                        {isImpactGiftEnabled(event) && event.charities && event.charities.length > 0 && (
                           <p className="text-caption truncate">
                             {event.charities.length === 1
                               ? event.charities[0].name
@@ -440,8 +441,8 @@ const Dashboard = () => {
 
                   {/* Event Stats - Show different stats based on whether event has charities */}
                   <div className="bg-neutral-50 rounded-xl p-5 mb-6 border border-neutral-200">
-                    {event.charities && event.charities.length > 0 ? (
-                      // Event with charities - show Total Raised + RSVP count
+                    {isImpactGiftEnabled(event) ? (
+                      // Impact Gift event - show Total Raised + RSVP count
                       <>
                         <div className="flex justify-between items-baseline mb-3">
                           <span className="text-caption font-medium">Total Raised</span>

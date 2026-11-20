@@ -110,6 +110,7 @@ export interface CreateEventInput {
   charity_ids?: number[]; // Array of charity IDs for multiple charities
   goal_amount?: number;
   potluck_enabled?: boolean;
+  impact_gift_enabled?: boolean;
 }
 
 export interface CreateDonationInput {

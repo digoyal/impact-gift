@@ -30,7 +30,8 @@ router.post(
     body('charity_id').optional().isInt(),
     body('charity_ids').optional().isArray(),
     body('goal_amount').optional().isFloat({ min: 0 }),
-    body('potluck_enabled').optional().isBoolean()
+    body('potluck_enabled').optional().isBoolean(),
+    body('impact_gift_enabled').optional().isBoolean()
   ],
   async (req: AuthRequest, res: Response) => {
     try {
@@ -54,7 +55,7 @@ router.post(
         title, description, event_type, event_date, start_date, end_date,
         start_time, end_time, venue_name, address, virtual_link,
         host_name, host_phone, rsvp_deadline, dress_code,
-        charity_id, charity_ids, goal_amount, potluck_enabled
+        charity_id, charity_ids, goal_amount, potluck_enabled, impact_gift_enabled
       }: CreateEventInput = req.body;
       const slug = generateSlug(title);
 
@@ -81,9 +82,9 @@ router.post(
           user_id, title, description, event_type, event_date, start_date, end_date,
           start_time, end_time, venue_name, address, virtual_link,
           host_name, host_phone, rsvp_deadline, dress_code,
-          charity_id, goal_amount, slug, potluck_enabled
+          charity_id, goal_amount, slug, potluck_enabled, impact_gift_enabled
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
          RETURNING *`,
         [
           req.user!.id,
@@ -105,7 +106,8 @@ router.post(
           charityList.length === 1 ? charityList[0] : null,
           goal_amount || null,
           slug,
-          potluck_enabled || false
+          potluck_enabled || false,
+          impact_gift_enabled === true || impact_gift_enabled === 'true'
         ]
       );
 
@@ -508,7 +510,8 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
       show_guest_list,
       dress_code,
       charity_ids,
-      potluck_enabled
+      potluck_enabled,
+      impact_gift_enabled
     } = req.body;
 
     // Check if identifier is a slug or ID
@@ -543,10 +546,11 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
            show_guest_list = COALESCE($9, show_guest_list),
            dress_code = COALESCE($10, dress_code),
            potluck_enabled = COALESCE($11, potluck_enabled),
+           impact_gift_enabled = COALESCE($12, impact_gift_enabled),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $12
+       WHERE id = $13
        RETURNING *`,
-      [title, description, event_date, event_type, start_date, end_date, goal_amount, is_active, show_guest_list, dress_code, potluck_enabled, event.id]
+      [title, description, event_date, event_type, start_date, end_date, goal_amount, is_active, show_guest_list, dress_code, potluck_enabled, impact_gift_enabled, event.id]
     );
 
     // If charity_ids provided, update charity association
@@ -575,6 +579,10 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
             [event.id, charityId]
           );
         }
+        await query(
+          `UPDATE events SET impact_gift_enabled = true WHERE id = $1`,
+          [event.id]
+        );
       }
     }
 
@@ -768,7 +776,7 @@ router.post('/:identifier/duplicate', authenticate, async (req: AuthRequest, res
         start_date, end_date, start_time, end_time,
         venue_name, address, virtual_link,
         host_name, host_phone, rsvp_deadline,
-        goal_amount, potluck_enabled, slug,
+        goal_amount, potluck_enabled, impact_gift_enabled, slug,
         created_at, updated_at
       )
       VALUES (
@@ -776,7 +784,7 @@ router.post('/:identifier/duplicate', authenticate, async (req: AuthRequest, res
         $6, $7, $8, $9,
         $10, $11, $12,
         $13, $14, $15,
-        $16, $17, $18,
+        $16, $17, $18, $19,
         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
       )
       RETURNING *`,
@@ -798,6 +806,7 @@ router.post('/:identifier/duplicate', authenticate, async (req: AuthRequest, res
         originalEvent.rsvp_deadline,
         originalEvent.goal_amount,
         originalEvent.potluck_enabled,
+        originalEvent.impact_gift_enabled === true,
         newSlug
       ]
     );
