@@ -1335,7 +1335,9 @@ const ManageEvent = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">RSVP</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">+Guests</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Donated</th>
+                      {impactGiftOn && (
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Donated</th>
+                      )}
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                   </thead>
@@ -1386,13 +1388,15 @@ const ManageEvent = () => {
                               <span className="text-gray-400">-</span>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {guest.has_donated ? (
-                              <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
+                          {impactGiftOn && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {guest.has_donated ? (
+                                <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
                             <button
                               onClick={() => updateGuest(guest.id)}
