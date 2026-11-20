@@ -38,12 +38,18 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
 
   const handleAddCoHost = async (e: React.FormEvent) => {
     e.preventDefault();
+    const name = formData.name.trim();
+    if (!name) {
+      toast.error('Please enter the co-host’s name');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const response = await api.post<CoHost & { email_sent?: boolean; email_note?: string }>(
         `/co-hosts/event/${eventId}`,
-        formData
+        { email: formData.email.trim(), name }
       );
       if (response.data.email_sent === false && response.data.email_note) {
         toast.success(`Co-host added. ${response.data.email_note}`);
@@ -175,6 +181,24 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
 
             <form onSubmit={handleAddCoHost} className="space-y-4">
               <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Name *
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  required
+                  className="input"
+                  placeholder="e.g., John Smith"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Used in the co-host list and in the notification email
+                </p>
+              </div>
+
+              <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email Address *
                 </label>
@@ -189,23 +213,6 @@ const CoHostsManagement = ({ eventId }: CoHostsManagementProps) => {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   They&apos;ll get an email with a link to accept co-host access for this event
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Name (Optional)
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  className="input"
-                  placeholder="e.g., John Smith"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  If they don't have an account, this name will be displayed
                 </p>
               </div>
 

@@ -51,7 +51,7 @@ router.post(
   authenticate,
   [
     body('email').isEmail().withMessage('Valid email required'),
-    body('name').optional().trim()
+    body('name').trim().notEmpty().withMessage('Name is required')
   ],
   async (req: AuthRequest, res: Response) => {
     try {
