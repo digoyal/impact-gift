@@ -14,6 +14,7 @@ import ProgressTab from '../components/manage-event/ProgressTab';
 import GuestsTab from '../components/manage-event/GuestsTab';
 import EventImageSelector from '../components/EventImageSelector';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
+import { toastEmailSendError, toastEmailSendResult } from '../utils/emailSendFeedback';
 import { isImpactGiftEnabled } from '../utils/impactGift';
 import {
   getEventOwnerEmail,
@@ -547,16 +548,11 @@ const ManageEvent = () => {
   const resendInvitation = async (guestId: number) => {
     try {
       const response = await api.post(`/invitations/resend/${guestId}`);
-      toast.success(response.data.message);
+      toastEmailSendResult(response.data);
       await fetchEventData();
     } catch (error: unknown) {
-      console.error(`[RESEND FRONTEND] Error resending invitation:`, error);
-      if (isAxiosError(error)) {
-        console.error(`[RESEND FRONTEND] Error response:`, error.response?.data);
-      }
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = data?.error as string || 'Failed to resend invitation';
-      toast.error(errorMsg);
+      toastEmailSendError(data, 'Failed to resend invitation');
     }
   };
 
@@ -648,12 +644,11 @@ const ManageEvent = () => {
         event_id: event.id
       });
 
-      toast.success(response.data.message);
+      toastEmailSendResult(response.data);
       await fetchEventData();
     } catch (error: unknown) {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = data?.error as string || 'Failed to send invitations';
-      toast.error(errorMsg);
+      toastEmailSendError(data, 'Failed to send invitations');
     }
   };
 
@@ -1423,13 +1418,12 @@ const ManageEvent = () => {
                         target_filters: updateFilters
                       });
 
-                      toast.success(response.data.message);
+                      toastEmailSendResult(response.data);
                       setUpdateMessage('');
                       setUpdateFilters(['all']);
                     } catch (error: unknown) {
                       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = data?.error as string || 'Failed to send message';
-                      toast.error(errorMsg);
+                      toastEmailSendError(data, 'Failed to send message');
                     }
                   }}
                   className="btn btn-primary"

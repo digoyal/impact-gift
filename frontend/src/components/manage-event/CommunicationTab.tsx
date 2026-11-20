@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Event } from '../../types';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { getErrorMessage } from '../../utils/errors';
+import { isAxiosError } from 'axios';
+import { toastEmailSendError, toastEmailSendResult } from '../../utils/emailSendFeedback';
 
 interface CommunicationTabProps {
   event: Event;
@@ -31,11 +32,14 @@ const CommunicationTab = ({ event, filterCounts }: CommunicationTabProps) => {
         target_filters: updateFilters
       });
 
-      toast.success(response.data.message);
+      toastEmailSendResult(response.data);
       setUpdateMessage('');
       setUpdateFilters(['all']);
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const data = isAxiosError(error)
+        ? (error.response?.data as Record<string, unknown> | undefined)
+        : undefined;
+      toastEmailSendError(data, 'Failed to send message');
     }
   };
 

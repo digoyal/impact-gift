@@ -8,6 +8,8 @@ export interface SendEmailParams {
   subject: string;
   html: string;
   from?: string;
+  text?: string;
+  replyTo?: string;
 }
 
 export interface DonationEmailParams {
@@ -66,7 +68,7 @@ const fromEmail = process.env.RESEND_FROM_EMAIL || 'Impact Gift <noreply@giftwit
 /**
  * Send a generic email
  */
-export async function sendEmail({ to, subject, html, from }: SendEmailParams) {
+export async function sendEmail({ to, subject, html, from, text, replyTo }: SendEmailParams) {
   console.log('[sendEmail] Starting email send process');
   console.log('[sendEmail] To:', to);
   console.log('[sendEmail] Subject:', subject);
@@ -85,6 +87,8 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams) {
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
+      ...(text ? { text } : {}),
+      ...(replyTo ? { replyTo } : {}),
     });
 
     console.log('[sendEmail] Resend API response:', JSON.stringify(result, null, 2));

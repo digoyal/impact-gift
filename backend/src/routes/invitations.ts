@@ -1,14 +1,14 @@
 import { Router, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { Resend } from 'resend';
 import { query } from '../database/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { CreateEmailTemplateInput } from '../types';
 import { isOwnerOrCoHost } from '../utils/coHostHelpers';
 import { buildGuestFilterClause, GuestFilter } from '../utils/guestFiltering';
+import { sendEmail } from '../services/emailService';
+import { getResendFromEmail, isResendConfigured } from '../utils/resendConfig';
 
 const router = Router();
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // NOTE: Custom email templates feature removed - all emails use standardized format
 
@@ -88,11 +88,24 @@ View your invitation: {{EVENT_LINK}}`;
       if (guests.length === 0) {
         return res.json({
           message: 'No pending invitations to send',
-          sent: 0
+          sent: 0,
+          email_sent: false,
+        });
+      }
+
+      if (!isResendConfigured()) {
+        return res.status(503).json({
+          error: 'Email service not configured',
+          email_sent: false,
+          email_note:
+            'Email service not configured. Set RESEND_API_KEY to send invitations.',
+          sent: 0,
+          total: guests.length,
         });
       }
 
       const baseEventUrl = `${process.env.FRONTEND_URL}/event/${event.slug}`;
+      const fromEmail = getResendFromEmail();
       const senderName = `${event.first_name} ${event.last_name}`;
 
       let sentCount = 0;
@@ -106,8 +119,7 @@ View your invitation: {{EVENT_LINK}}`;
         // Replace template variables in plain text
         const personalizedBody = plainTextBody.replace(/\{\{EVENT_LINK\}\}/g, eventUrl);
 
-        if (resend) {
-          try {
+        try {
             // CLEAN EMAIL TEMPLATE - NO custom messages, NO RSVP button
             const htmlEmail = `<!DOCTYPE html>
 <html>
@@ -164,37 +176,33 @@ View your invitation: {{EVENT_LINK}}`;
 </body>
 </html>`;
 
-            await resend.emails.send({
-              from: 'Impact Gift <noreply@giftwithimpact.com>',
+            const emailResult = await sendEmail({
+              from: fromEmail,
               to: guest.email,
               replyTo: event.user_email,
-              subject: subject,
+              subject,
               text: personalizedBody,
-              html: htmlEmail
+              html: htmlEmail,
             });
 
-            console.log(`✅ Email sent to ${guest.email}`);
-
-            // Track successfully sent guest
-            sentGuestIds.push(guest.id);
-            sentCount++;
-          } catch (emailError: any) {
+            if (emailResult.success) {
+              console.log(`✅ Email sent to ${guest.email}`);
+              sentGuestIds.push(guest.id);
+              sentCount++;
+            } else {
+              console.error(`❌ Failed to send email to ${guest.email}:`, emailResult.error || emailResult.message);
+              errors_list.push({
+                email: guest.email,
+                error: emailResult.error || emailResult.message || 'Email delivery failed',
+              });
+            }
+        } catch (emailError: any) {
             console.error(`❌ Failed to send email to ${guest.email}:`, emailError);
-            console.error('Resend error details:', {
-              message: emailError.message,
-              statusCode: emailError.statusCode,
-              name: emailError.name
-            });
             errors_list.push({
               email: guest.email,
-              error: emailError.message || 'Email delivery failed'
+              error: emailError.message || 'Email delivery failed',
             });
           }
-        } else {
-          // Development mode - just track as sent
-          sentGuestIds.push(guest.id);
-          sentCount++;
-        }
       }
 
       // Batch update all successfully sent guests
@@ -209,22 +217,29 @@ View your invitation: {{EVENT_LINK}}`;
         );
       }
 
-      const response: any = {
-        message: `Invitations sent to ${sentCount} guest(s)`,
+      const emailSent = sentCount > 0;
+      const response: Record<string, unknown> = {
+        message: emailSent
+          ? `Invitations sent to ${sentCount} guest(s)`
+          : 'No invitation emails were delivered',
         sent: sentCount,
-        total: guests.length
+        total: guests.length,
+        email_sent: emailSent,
       };
-
-      if (!resend) {
-        response.note = 'Email service not configured. Guests marked as invited but no emails were actually sent.';
-        response.preview = {
-          subject,
-          body: plainTextBody.replace(/\{\{EVENT_LINK\}\}/g, baseEventUrl)
-        };
-      }
 
       if (errors_list.length > 0) {
         response.errors = errors_list;
+      }
+
+      if (!emailSent) {
+        response.email_note =
+          errors_list[0]?.error ||
+          'No emails were delivered. Check email service configuration and try again.';
+        return res.status(502).json(response);
+      }
+
+      if (errors_list.length > 0) {
+        response.email_note = `${errors_list.length} guest(s) did not receive an email.`;
       }
 
       res.json(response);
@@ -304,11 +319,17 @@ View your invitation: {{EVENT_LINK}}`;
       const personalizedBody = plainTextBody.replace(/\{\{EVENT_LINK\}\}/g, eventUrl);
 
       console.log(`[RESEND] Email details - To: ${guest.email}, ReplyTo: ${guest.user_email}`);
-      console.log(`[RESEND] Resend configured: ${!!resend}`);
-      console.log(`[RESEND] RESEND_API_KEY exists: ${!!process.env.RESEND_API_KEY}`);
+      console.log(`[RESEND] Resend configured: ${isResendConfigured()}`);
 
-      if (resend) {
-        try {
+      if (!isResendConfigured()) {
+        return res.status(503).json({
+          error: 'Email service not configured',
+          email_sent: false,
+          email_note: 'Email service not configured. Set RESEND_API_KEY to resend invitations.',
+        });
+      }
+
+      try {
           console.log(`[RESEND] Sending email via Resend...`);
 
           // Create HTML email template
@@ -406,18 +427,27 @@ View your invitation: {{EVENT_LINK}}`;
 </html>
           `;
 
-          const result = await resend.emails.send({
-            from: 'Impact Gift <noreply@giftwithimpact.com>',
+          const emailResult = await sendEmail({
+            from: getResendFromEmail(),
             to: guest.email,
             replyTo: guest.user_email,
-            subject: subject,
+            subject,
             text: personalizedBody,
-            html: htmlEmail
+            html: htmlEmail,
           });
 
-          console.log(`[RESEND] ✅ Resend API response:`, result);
+          if (!emailResult.success) {
+            const errMsg = emailResult.error || emailResult.message || 'Failed to send email';
+            console.error(`[RESEND] ❌ Failed to resend email to ${guest.email}:`, errMsg);
+            return res.status(502).json({
+              error: errMsg,
+              email_sent: false,
+              email_note: errMsg,
+            });
+          }
 
-          // Update invitation sent timestamp
+          console.log(`[RESEND] ✅ Email sent, id:`, emailResult.id);
+
           await query(
             `UPDATE guests
              SET invitation_sent = true,
@@ -427,29 +457,18 @@ View your invitation: {{EVENT_LINK}}`;
             [guestId]
           );
 
-          console.log(`[RESEND] ✅ Database updated for guest ${guestId}`);
-
           res.json({
             success: true,
-            message: `Invitation resent to ${guest.email}`
+            email_sent: true,
+            message: `Invitation resent to ${guest.email}`,
           });
-        } catch (emailError: any) {
+      } catch (emailError: any) {
           console.error(`[RESEND] ❌ Failed to resend email to ${guest.email}:`, emailError);
-          console.error('[RESEND] Error details:', {
-            message: emailError.message,
-            statusCode: emailError.statusCode,
-            name: emailError.name,
-            stack: emailError.stack
-          });
           res.status(500).json({
-            error: emailError.message || 'Failed to send email'
+            error: emailError.message || 'Failed to send email',
+            email_sent: false,
+            email_note: emailError.message || 'Failed to send email',
           });
-        }
-      } else {
-        console.log(`[RESEND] ❌ Resend not configured - RESEND_API_KEY missing`);
-        res.status(500).json({
-          error: 'Email service not configured'
-        });
       }
     } catch (error) {
       console.error('[RESEND] Error resending invitation:', error);
@@ -540,7 +559,19 @@ router.post(
         return res.status(400).json({ error: filterMessage });
       }
 
+      if (!isResendConfigured()) {
+        return res.status(503).json({
+          error: 'Email service not configured',
+          email_sent: false,
+          email_note:
+            'Email service not configured. Set RESEND_API_KEY to message guests.',
+          sent: 0,
+          total: guests.length,
+        });
+      }
+
       const eventUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/event/${event.slug}`;
+      const fromEmail = getResendFromEmail();
       const senderName = `${event.first_name} ${event.last_name}`;
 
       const defaultMessage = update_message || `We've made some updates to the event! Check out the latest details on the event page.`;
@@ -658,22 +689,27 @@ router.post(
 </html>
           `;
 
-          if (resend) {
-            await resend.emails.send({
-              from: 'Impact Gift <noreply@giftwithimpact.com>',
-              to: guest.email,
-              replyTo: event.user_email,
-              subject: subject,
-              text: `Event Update: ${event.title}\n\n${defaultMessage}\n\nView event: ${eventUrl}\n\n- ${senderName}`,
-              html: htmlEmail
-            });
+          const emailResult = await sendEmail({
+            from: fromEmail,
+            to: guest.email,
+            replyTo: event.user_email,
+            subject,
+            text: `Event Update: ${event.title}\n\n${defaultMessage}\n\nView event: ${eventUrl}\n\n- ${senderName}`,
+            html: htmlEmail,
+          });
 
+          if (emailResult.success) {
             console.log(`✅ Update email sent to ${guest.email}`);
             sentCount++;
           } else {
-            // Development mode - just count it
-            console.log(`[DEV MODE] Would send update email to ${guest.email}`);
-            sentCount++;
+            console.error(
+              `❌ Failed to send update email to ${guest.email}:`,
+              emailResult.error || emailResult.message
+            );
+            errors_list.push({
+              email: guest.email,
+              error: emailResult.error || emailResult.message || 'Email delivery failed',
+            });
           }
         } catch (emailError: any) {
           console.error(`❌ Failed to send update email to ${guest.email}:`, emailError);
@@ -684,13 +720,30 @@ router.post(
         }
       }
 
-      res.json({
-        success: true,
-        message: `Event update sent to ${sentCount} guest(s)`,
+      const emailSent = sentCount > 0;
+      const response: Record<string, unknown> = {
+        success: emailSent,
+        email_sent: emailSent,
+        message: emailSent
+          ? `Event update sent to ${sentCount} guest(s)`
+          : 'No messages were delivered',
         sent: sentCount,
         total: guests.length,
-        errors: errors_list
-      });
+        errors: errors_list,
+      };
+
+      if (!emailSent) {
+        response.email_note =
+          errors_list[0]?.error ||
+          'No emails were delivered. Check email service configuration and try again.';
+        return res.status(502).json(response);
+      }
+
+      if (errors_list.length > 0) {
+        response.email_note = `${errors_list.length} guest(s) did not receive the message.`;
+      }
+
+      res.json(response);
     } catch (error) {
       console.error('Error sending event updates:', error);
       res.status(500).json({ error: 'Server error' });

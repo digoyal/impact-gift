@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import { query } from '../database/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { sendEmail } from '../services/emailService';
+import { isResendConfigured } from '../utils/resendConfig';
 import { buildGuestFilterClause, GuestFilter, getGuestCountsByFilter } from '../utils/guestFiltering';
 
 const router = Router();
@@ -57,6 +58,16 @@ router.post(
       }
 
       const guests = guestsResult.rows;
+
+      if (!isResendConfigured()) {
+        return res.status(503).json({
+          error: 'Email service not configured',
+          email_sent: false,
+          email_note: 'Email service not configured. Set RESEND_API_KEY to send emails.',
+          sent: 0,
+          total: guests.length,
+        });
+      }
 
       // Build email HTML
       const emailHtml = `
@@ -130,11 +141,18 @@ router.post(
       // Send emails to all matching guests
       const emailPromises = guests.map(async (guest) => {
         try {
-          await sendEmail({
+          const result = await sendEmail({
             to: guest.email,
             subject: subject,
-            html: emailHtml
+            html: emailHtml,
           });
+          if (!result.success) {
+            return {
+              email: guest.email,
+              success: false,
+              error: result.error || result.message || 'Email delivery failed',
+            };
+          }
           return { email: guest.email, success: true };
         } catch (error) {
           console.error(`Failed to send email to ${guest.email}:`, error);
@@ -146,14 +164,28 @@ router.post(
 
       const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
       const failureCount = results.length - successCount;
+      const emailSent = successCount > 0;
 
-      res.json({
-        success: true,
-        message: `Emails sent successfully`,
+      const response: Record<string, unknown> = {
+        success: emailSent,
+        email_sent: emailSent,
+        message: emailSent ? `Emails sent to ${successCount} guest(s)` : 'No emails were delivered',
         total: guests.length,
         sent: successCount,
-        failed: failureCount
-      });
+        failed: failureCount,
+      };
+
+      if (!emailSent) {
+        response.email_note =
+          'No emails were delivered. Check email service configuration and try again.';
+        return res.status(502).json(response);
+      }
+
+      if (failureCount > 0) {
+        response.email_note = `${failureCount} guest(s) did not receive the email.`;
+      }
+
+      res.json(response);
     } catch (error) {
       console.error('Error sending targeted emails:', error);
       res.status(500).json({ error: 'Failed to send emails' });
