@@ -7,10 +7,11 @@ import { Resend } from 'resend';
 import { query } from '../database/db';
 import { User, UserPayload } from '../types';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getResendFromEmail, isResendConfigured } from '../utils/resendConfig';
 
 const router = Router();
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Impact Gift <noreply@giftwithimpact.com>';
+const resend = isResendConfigured() ? new Resend(process.env.RESEND_API_KEY!) : null;
+const FROM_EMAIL = getResendFromEmail();
 
 // Helper function to link co-host invitations to user account
 async function linkCoHostInvitations(userId: number, email: string): Promise<void> {
