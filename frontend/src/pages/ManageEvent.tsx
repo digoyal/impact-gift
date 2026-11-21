@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Papa from 'papaparse';
 import api from '../utils/api';
@@ -848,6 +848,18 @@ const ManageEvent = () => {
     'progress',
   ];
 
+  const manageTabLabels: Record<TabType, string> = {
+    details: 'Details',
+    dresscode: 'Dress Code',
+    potluck: 'Potluck',
+    charities: 'Impact Gift',
+    guests: 'Guests',
+    rsvp: 'RSVP Summary',
+    communication: 'Message Guests',
+    cohosts: 'Co-hosts',
+    progress: 'Progress & Donations',
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -922,29 +934,31 @@ const ManageEvent = () => {
       {/* Tabs */}
       <div className="border-b border-neutral-200 mb-6 -mx-4 sm:mx-0">
         <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
-          <nav className="-mb-px flex space-x-2 sm:space-x-6 md:space-x-8">
-            {manageTabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => {
-                  setActiveTab(tab);
-                }}
-                className={`py-3 px-2 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === tab
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-                }`}
-              >
-                {tab === 'details' && 'Event Details'}
-                {tab === 'dresscode' && 'Dress Code'}
-                {tab === 'potluck' && 'Potluck'}
-                {tab === 'charities' && 'Impact Gift'}
-                {tab === 'guests' && 'Guest List'}
-                {tab === 'rsvp' && 'RSVP Summary'}
-                {tab === 'communication' && 'Message Guests'}
-                {tab === 'cohosts' && 'Co-hosts'}
-                {tab === 'progress' && 'Progress & Donations'}
-              </button>
+          <nav className="-mb-px flex flex-wrap items-center gap-x-0.5 sm:gap-x-1">
+            {manageTabs.map((tab, index) => (
+              <Fragment key={tab}>
+                {index > 0 && (
+                  <span
+                    className="text-neutral-300 text-sm leading-none select-none px-0.5"
+                    aria-hidden="true"
+                  >
+                    ·
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab);
+                  }}
+                  className={`py-2.5 px-1 sm:px-1.5 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    activeTab === tab
+                      ? 'border-primary-600 text-primary-600'
+                      : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
+                  }`}
+                >
+                  {manageTabLabels[tab]}
+                </button>
+              </Fragment>
             ))}
           </nav>
         </div>
