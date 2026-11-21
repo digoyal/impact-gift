@@ -36,6 +36,24 @@ function formatPreviewBody(text: string, html?: string): string {
   return `${text}\n\n--- HTML body ---\n${html}`;
 }
 
+/** Map common SMTP auth failures to actionable copy (no secrets). */
+function userFacingSmtpError(errMsg: string): string {
+  const lower = errMsg.toLowerCase();
+  const gmailAuthRejected =
+    lower.includes('535') ||
+    lower.includes('badcredentials') ||
+    lower.includes('username and password not accepted');
+  if (gmailAuthRejected && (process.env.SMTP_HOST || '').includes('gmail')) {
+  const passLen = (process.env.SMTP_PASSWORD || '').trim().length;
+  const appPasswordHint =
+    passLen !== 16
+      ? ` SMTP_PASSWORD is ${passLen} characters; Google App Passwords are 16 characters.`
+      : '';
+    return `Gmail SMTP: use a Google App Password in SMTP_PASSWORD (not your account password).${appPasswordHint}`;
+  }
+  return errMsg;
+}
+
 /**
  * Send email via SMTP, or log full message to stdout when SMTP_HOST is unset (local/dev).
  */
@@ -89,6 +107,7 @@ export async function sendEmail(params: SendMailParams): Promise<MailSendResult>
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : 'Failed to send email';
     console.error('[mail] send failed:', errMsg);
-    return { success: false, error: errMsg, message: errMsg };
+    const friendly = userFacingSmtpError(errMsg);
+    return { success: false, error: friendly, message: friendly };
   }
 }
