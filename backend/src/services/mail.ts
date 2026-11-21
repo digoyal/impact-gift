@@ -41,15 +41,19 @@ function userFacingSmtpError(errMsg: string): string {
   const lower = errMsg.toLowerCase();
   const gmailAuthRejected =
     lower.includes('535') ||
+    lower.includes('534') ||
     lower.includes('badcredentials') ||
-    lower.includes('username and password not accepted');
+    lower.includes('username and password not accepted') ||
+    lower.includes('application-specific password');
   if (gmailAuthRejected && (process.env.SMTP_HOST || '').includes('gmail')) {
-  const passLen = (process.env.SMTP_PASSWORD || '').trim().length;
-  const appPasswordHint =
-    passLen !== 16
-      ? ` SMTP_PASSWORD is ${passLen} characters; Google App Passwords are 16 characters.`
-      : '';
-    return `Gmail SMTP: use a Google App Password in SMTP_PASSWORD (not your account password).${appPasswordHint}`;
+    const passLen = (process.env.SMTP_PASSWORD || '').trim().length;
+    if (passLen !== 16) {
+      return `Gmail SMTP: use a Google App Password in SMTP_PASSWORD (not your account password). SMTP_PASSWORD is ${passLen} characters; Google App Passwords are 16 characters.`;
+    }
+    return (
+      'Gmail SMTP rejected the login. Confirm SMTP_USER is the Google account that created the App Password, ' +
+      'and that SMTP_PASSWORD is the current 16-character App Password. If you just edited backend/.env, restart the API server so it reloads env vars.'
+    );
   }
   return errMsg;
 }
@@ -83,7 +87,7 @@ export async function sendEmail(params: SendMailParams): Promise<MailSendResult>
       process.env.SMTP_USE_TLS === 'true' ||
       process.env.SMTP_USE_TLS === '1';
     const user = (process.env.SMTP_USER || '').trim();
-    const password = process.env.SMTP_PASSWORD || '';
+    const password = (process.env.SMTP_PASSWORD || '').trim();
 
     const transporter = nodemailer.createTransport({
       host,
