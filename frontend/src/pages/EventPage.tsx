@@ -235,7 +235,6 @@ const EventPage = () => {
           <div className="md:col-span-2 space-y-6 lg:space-y-8">
             {event.description && event.description.trim() && (
               <div className="card">
-                <h2 className="text-heading-2 mb-4 text-neutral-900">About This Event</h2>
                 <p className="text-body-large text-neutral-700 whitespace-pre-wrap leading-relaxed">{event.description}</p>
               </div>
             )}
