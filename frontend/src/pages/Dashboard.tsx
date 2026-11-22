@@ -207,7 +207,7 @@ const dashboardTabHelperText: Record<DashboardTab, string> = {
 };
 
 function dashboardPillButtonClass(active: boolean) {
-  return `px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+  return `px-3 py-1 rounded-full text-sm font-medium transition-all ${
     active
       ? 'bg-primary-600 text-white shadow-md'
       : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
@@ -375,7 +375,7 @@ const Dashboard = () => {
           <p className="text-body-large text-neutral-600">Your events and invitations</p>
         </div>
 
-        <div className="mb-6 flex gap-2" role="tablist" aria-label="Dashboard sections">
+        <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Dashboard sections">
           {dashboardTabs.map((tab) => (
             <button
               key={tab}
@@ -383,22 +383,21 @@ const Dashboard = () => {
               role="tab"
               aria-selected={activeTab === tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 min-w-0 ${dashboardPillButtonClass(activeTab === tab)}`}
+              className={dashboardPillButtonClass(activeTab === tab)}
             >
               {dashboardTabLabels[tab]}
             </button>
           ))}
-          <Link
-            to="/create-event"
-            className={`flex-1 min-w-0 text-center ${dashboardPillButtonClass(false)}`}
-          >
-            Create Event
-          </Link>
         </div>
 
         {showTimingFilters && (
           <div className="mb-6">
-            <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
+              <Link to="/create-event" className={dashboardPillButtonClass(false)}>
+                Create Event
+              </Link>
+            </div>
             <p className="text-sm text-neutral-600 mt-2">{dashboardTabHelperText[activeTab]}</p>
           </div>
         )}
