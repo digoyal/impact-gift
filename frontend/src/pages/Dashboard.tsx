@@ -777,7 +777,7 @@ const Dashboard = () => {
           <p className="text-sm text-neutral-600 mb-6">{dashboardTabHelperText.charity}</p>
           <div className="space-y-8 max-w-3xl">
             <CharityPageCard />
-            {user?.charity_page_slug ? <FavoriteCharities /> : null}
+            <FavoriteCharities />
           </div>
         </div>
         )}
