@@ -143,7 +143,7 @@ const PotluckItemsTable = ({
               )}
               {(onEdit || onDelete) && (
                 <td className="px-3 py-2 text-left whitespace-nowrap align-middle">
-                  <div className="flex items-center gap-0.5">
+                  <div className="inline-flex items-center gap-0">
                     {onEdit && (
                       <button
                         type="button"
@@ -161,7 +161,7 @@ const PotluckItemsTable = ({
                         onClick={() => onDelete(item.id)}
                         aria-label={`Delete ${item.item_name}`}
                         title="Delete"
-                        className="inline-flex items-center justify-center min-h-9 min-w-9 rounded text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                        className="inline-flex items-center justify-center min-h-9 min-w-9 -ml-1 rounded text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
