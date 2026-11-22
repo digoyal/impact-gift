@@ -253,37 +253,31 @@ const LIBRARY_PRESETS = IMAGE_CATEGORIES.flatMap((category) =>
 
 const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText }: EventImageSelectorProps) => {
   const [activeTab, setActiveTab] = useState<'library' | 'upload'>('library');
+  const [selectedCategory, setSelectedCategory] = useState<string>(IMAGE_CATEGORIES[0].name);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('');
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setPreview(currentImageUrl || null);
     if (!currentImageUrl) {
-      setSelectedPresetId('');
+      setSelectedPresetId(null);
       return;
     }
     const match = LIBRARY_PRESETS.find((image) => image.url === currentImageUrl);
-    setSelectedPresetId(match?.publicId ?? '');
+    if (match) {
+      setSelectedPresetId(match.publicId);
+      setSelectedCategory(match.category);
+    } else {
+      setSelectedPresetId(null);
+    }
   }, [currentImageUrl]);
 
   const handlePresetSelect = (image: { url: string; publicId: string; name: string }) => {
     setPreview(image.url);
     setSelectedPresetId(image.publicId);
     onImageUploaded(image.url, image.publicId);
-  };
-
-  const handleLibrarySelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const publicId = event.target.value;
-    if (!publicId) {
-      handleRemoveImage();
-      return;
-    }
-    const image = LIBRARY_PRESETS.find((preset) => preset.publicId === publicId);
-    if (image) {
-      handlePresetSelect(image);
-    }
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,7 +317,7 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
 
       const { url, publicId } = response.data;
       onImageUploaded(url, publicId);
-      setSelectedPresetId('');
+      setSelectedPresetId(null);
       toast.success('Image uploaded successfully!');
     } catch (error: unknown) {
       console.error('Upload error:', error);
@@ -341,7 +335,7 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
 
   const handleRemoveImage = () => {
     setPreview(null);
-    setSelectedPresetId('');
+    setSelectedPresetId(null);
     onImageUploaded('', '');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -384,26 +378,56 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
       {/* Library Tab */}
       {activeTab === 'library' && (
         <div>
-          <label htmlFor="event-image-library" className="sr-only">
-            Choose from image library
+          <label htmlFor="event-image-category" className="block text-sm font-medium text-gray-700 mb-1">
+            Category
           </label>
           <select
-            id="event-image-library"
-            className="input w-full"
-            value={selectedPresetId}
-            onChange={handleLibrarySelect}
+            id="event-image-category"
+            className="input w-full mb-4"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
           >
-            <option value="">Select an image from the library…</option>
             {IMAGE_CATEGORIES.map((category) => (
-              <optgroup key={category.name} label={category.name}>
-                {category.images.map((image) => (
-                  <option key={image.publicId} value={image.publicId}>
-                    {image.name}
-                  </option>
-                ))}
-              </optgroup>
+              <option key={category.name} value={category.name}>
+                {category.name}
+              </option>
             ))}
           </select>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {IMAGE_CATEGORIES.find((cat) => cat.name === selectedCategory)?.images.map((image) => (
+              <button
+                key={image.publicId}
+                type="button"
+                onClick={() => handlePresetSelect(image)}
+                className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                  selectedPresetId === image.publicId
+                    ? 'border-primary-600 ring-2 ring-primary-200'
+                    : 'border-gray-200 hover:border-primary-300'
+                }`}
+              >
+                <img
+                  src={image.url}
+                  alt={image.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                  <p className="text-white text-xs font-medium truncate">{image.name}</p>
+                </div>
+                {selectedPresetId === image.publicId && (
+                  <div className="absolute top-2 right-2 bg-primary-600 text-white rounded-full p-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
