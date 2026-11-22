@@ -9,6 +9,7 @@ import DressCodeTab from '../components/manage-event/DressCodeTab';
 import ImpactGiftTab from '../components/manage-event/ImpactGiftTab';
 import CoHostsTab from '../components/manage-event/CoHostsTab';
 import RSVPTab from '../components/manage-event/RSVPTab';
+import RSVPSummaryBar from '../components/manage-event/RSVPSummaryBar';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import ProgressTab from '../components/manage-event/ProgressTab';
 import GuestsTab from '../components/manage-event/GuestsTab';
@@ -931,6 +932,8 @@ const ManageEvent = () => {
         </div>
       )}
 
+      <RSVPSummaryBar rsvpSummary={rsvpSummary} />
+
       {/* Tabs */}
       <div className="border-b border-neutral-200 mb-6 -mx-4 sm:mx-0">
         <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
@@ -1250,9 +1253,7 @@ const ManageEvent = () => {
       )}
 
       {/* RSVP Summary Tab */}
-      {activeTab === 'rsvp' && (
-        <RSVPTab rsvpSummary={rsvpSummary} />
-      )}
+      {activeTab === 'rsvp' && <RSVPTab />}
 
       {/* Communication Tab */}
       {activeTab === 'communication' && (
