@@ -7,7 +7,6 @@ import { parseLocalDate, formatTime } from '../utils/dateUtils';
 import { Event } from '../types';
 import toast from 'react-hot-toast';
 import DonationMethodSelector from '../components/DonationMethodSelector';
-import EventUpdates from '../components/EventUpdates';
 import EventCountdown from '../components/EventCountdown';
 import RSVPSection from '../components/RSVPSection';
 import AttendingGuests from '../components/AttendingGuests';
@@ -419,7 +418,6 @@ const EventPage = () => {
               </div>
             )}
 
-            <EventUpdates eventId={event.id} isOwner={!!isOwner} initialUpdates={event.updates || []} />
           </div>
 
           <div className="md:col-span-1">
