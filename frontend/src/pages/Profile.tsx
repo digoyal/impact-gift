@@ -3,7 +3,6 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { UpdateUserProfileInput } from '../types';
 import { isAxiosError } from '../utils/errors';
-import CharityPageSetupCard from '../components/CharityPageSetupCard';
 
 const Profile = () => {
   const [loading, setLoading] = useState(false);
@@ -12,8 +11,7 @@ const Profile = () => {
     last_name: '',
     email: '',
     phone_number: '',
-    address: '',
-    charity_page_slug: ''
+    address: ''
   });
 
   useEffect(() => {
@@ -28,8 +26,7 @@ const Profile = () => {
         last_name: response.data.last_name || '',
         email: response.data.email || '',
         phone_number: response.data.phone_number || '',
-        address: response.data.address || '',
-        charity_page_slug: response.data.charity_page_slug || ''
+        address: response.data.address || ''
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -46,8 +43,7 @@ const Profile = () => {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone_number: formData.phone_number || undefined,
-        address: formData.address || undefined,
-        charity_page_slug: formData.charity_page_slug || undefined
+        address: formData.address || undefined
       };
 
       await api.put('/users/profile', updateData);
@@ -128,13 +124,6 @@ const Profile = () => {
               <p className="text-xs text-gray-500 mt-1">
                 Used for alternative donation methods (Venmo, Zelle, PayPal)
               </p>
-            </div>
-
-            <div className="border-t border-gray-200 pt-6">
-              <CharityPageSetupCard
-                slug={formData.charity_page_slug}
-                onSlugChange={(charity_page_slug) => setFormData({ ...formData, charity_page_slug })}
-              />
             </div>
 
             <div>
