@@ -15,6 +15,7 @@ import PotluckItems from '../components/PotluckItems';
 import EventPhotosGallery, { EventPhoto } from '../components/EventPhotosGallery';
 import { useAuth } from '../contexts/AuthContext';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
+import { resolveMediaUrl } from '../utils/mediaUrl';
 
 const EventPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -127,6 +128,7 @@ const EventPage = () => {
   const pageUrl = window.location.href;
   const shareTitle = `You're invited to ${event.title}`;
   const shareDescription = `${event.first_name} ${event.last_name} invited you to ${event.title}${event.event_date ? ` on ${format(parseLocalDate(event.event_date), 'MMMM dd, yyyy')}` : ''}. RSVP and view event details.`;
+  const heroImageUrl = resolveMediaUrl(event.event_image_url);
 
   return (
     <>
@@ -139,14 +141,14 @@ const EventPage = () => {
         <meta property="og:url" content={pageUrl} />
         <meta property="og:title" content={shareTitle} />
         <meta property="og:description" content={shareDescription} />
-        <meta property="og:image" content={event.event_image_url || ''} />
+        <meta property="og:image" content={heroImageUrl} />
 
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content={pageUrl} />
         <meta property="twitter:title" content={shareTitle} />
         <meta property="twitter:description" content={shareDescription} />
-        <meta property="twitter:image" content={event.event_image_url || ''} />
+        <meta property="twitter:image" content={heroImageUrl} />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -164,6 +166,20 @@ const EventPage = () => {
               <span className="text-sm font-medium">Manage Event</span>
             </button>
           </div>
+        </div>
+      )}
+
+      {heroImageUrl && (
+        <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 overflow-hidden bg-neutral-100">
+          <img
+            src={heroImageUrl}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/15"
+            aria-hidden
+          />
         </div>
       )}
 

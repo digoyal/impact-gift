@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { resolveMediaUrl } from '../utils/mediaUrl';
 
 export interface EventPhoto {
   id?: number;
@@ -72,7 +73,7 @@ const EventPhotosGallery = ({
               className="relative group overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             >
               <img
-                src={photo.photo_url}
+                src={resolveMediaUrl(photo.photo_url)}
                 alt={photo.caption || `Photo ${index + 1}`}
                 className="w-full h-32 sm:h-40 object-cover transition-transform group-hover:scale-105"
                 loading="lazy"
@@ -144,7 +145,7 @@ const EventPhotosGallery = ({
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={filteredPhotos[currentPhotoIndex].photo_url}
+              src={resolveMediaUrl(filteredPhotos[currentPhotoIndex].photo_url)}
               alt={filteredPhotos[currentPhotoIndex].caption || `Photo ${currentPhotoIndex + 1}`}
               className="max-w-full max-h-[85vh] object-contain mx-auto rounded-lg"
             />

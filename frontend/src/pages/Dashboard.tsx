@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import FavoriteCharities from '../components/FavoriteCharities';
 import CharityPageCard from '../components/CharityPageCard';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
+import { resolveMediaUrl } from '../utils/mediaUrl';
 interface Invitation {
   id: number;
   event_id: number;
@@ -85,7 +86,7 @@ function DashboardEventCard({
     <>
       <div className="relative flex-shrink-0 w-20 sm:w-24 aspect-[3/4] rounded-lg overflow-hidden shadow-soft bg-neutral-100">
         {imageUrl ? (
-          <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+          <img src={resolveMediaUrl(imageUrl)} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-300">
             <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
