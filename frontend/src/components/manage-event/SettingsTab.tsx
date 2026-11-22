@@ -30,9 +30,6 @@ const SettingsTab = ({
               Show guest list publicly on event page
             </span>
           </label>
-          <p className="text-xs text-gray-500 ml-8">
-            When enabled, guests who RSVP&apos;d as &quot;Attending&quot; will be visible to everyone viewing your event page
-          </p>
         </div>
 
         <div className="flex gap-3 pt-4">
