@@ -311,6 +311,73 @@ router.post(
   }
 );
 
+// Update suggested item (authenticated - host only)
+router.put(
+  '/event/:eventId/suggested-items/:itemId',
+  authenticate,
+  [
+    body('item_name').trim().notEmpty().withMessage('Item name required'),
+    body('quantity').optional().isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
+    body('category').optional().trim(),
+    body('notes').optional().trim(),
+  ],
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { eventId, itemId } = req.params;
+      const { item_name, quantity, category, notes } = req.body;
+      const userId = req.user!.id;
+
+      const eventCheck = await query(
+        `SELECT e.user_id,
+                EXISTS(SELECT 1 FROM co_hosts WHERE event_id = e.id AND user_id = $2) as is_cohost
+         FROM events e
+         WHERE e.id = $1`,
+        [eventId, userId]
+      );
+
+      if (eventCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+
+      const event = eventCheck.rows[0];
+      if (event.user_id !== userId && !event.is_cohost) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      const itemCheck = await query(
+        'SELECT is_suggested FROM potluck_items WHERE id = $1 AND event_id = $2',
+        [itemId, eventId]
+      );
+
+      if (itemCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      if (!itemCheck.rows[0].is_suggested) {
+        return res.status(400).json({ error: 'Only suggested items can be edited by host' });
+      }
+
+      const result = await query(
+        `UPDATE potluck_items
+         SET item_name = $1, quantity = $2, category = $3, notes = $4
+         WHERE id = $5 AND event_id = $6
+         RETURNING *`,
+        [item_name, quantity || 1, category || null, notes || null, itemId, eventId]
+      );
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error updating suggested item:', error);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
 // Delete suggested item (authenticated - host only)
 router.delete('/event/:eventId/suggested-items/:itemId', authenticate, async (req: AuthRequest, res: Response) => {
   try {

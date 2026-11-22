@@ -15,13 +15,41 @@ const formatCategory = (category?: string) => (category?.trim() ? category : '�
 const formatItemWithQty = (item: PotluckItem) =>
   item.quantity > 1 ? `${item.item_name} × ${item.quantity}` : item.item_name;
 
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+      />
+    </svg>
+  );
+}
+
 const PotluckItemsTable = ({
   items,
   variant,
+  onEdit,
   onDelete,
 }: {
   items: PotluckItem[];
   variant: PotluckTableVariant;
+  onEdit?: (item: PotluckItem) => void;
   onDelete?: (id: number) => void;
 }) => {
   const personLabel = variant === 'claimed' ? 'Claimed by' : 'Added by';
@@ -54,7 +82,7 @@ const PotluckItemsTable = ({
                 <th className="px-3 py-2 text-left">Notes</th>
               </>
             )}
-            {onDelete && <th className="px-3 py-2 text-left">Actions</th>}
+            {(onEdit || onDelete) && <th className="px-3 py-2 text-left w-24">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 bg-white">
@@ -113,15 +141,32 @@ const PotluckItemsTable = ({
                   </td>
                 </>
               )}
-              {onDelete && (
+              {(onEdit || onDelete) && (
                 <td className="px-3 py-2 text-left whitespace-nowrap align-middle">
-                  <button
-                    type="button"
-                    onClick={() => onDelete(item.id)}
-                    className="text-red-600 hover:text-red-700 text-sm font-medium"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex items-center gap-0.5">
+                    {onEdit && (
+                      <button
+                        type="button"
+                        onClick={() => onEdit(item)}
+                        aria-label={`Edit ${item.item_name}`}
+                        title="Edit"
+                        className="inline-flex items-center justify-center min-h-9 min-w-9 rounded text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(item.id)}
+                        aria-label={`Delete ${item.item_name}`}
+                        title="Delete"
+                        className="inline-flex items-center justify-center min-h-9 min-w-9 rounded text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </td>
               )}
             </tr>
@@ -136,6 +181,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
   const [items, setItems] = useState<PotluckItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     item_name: '',
     quantity: 1,
@@ -159,24 +205,52 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
     }
   };
 
-  const handleAddSuggestedItem = async (e: React.FormEvent) => {
+  const resetSuggestForm = () => {
+    setEditingItemId(null);
+    setFormData({
+      item_name: '',
+      quantity: 1,
+      category: '',
+      notes: '',
+    });
+  };
+
+  const openSuggestModal = () => {
+    resetSuggestForm();
+    setShowAddModal(true);
+  };
+
+  const openEditSuggestedItem = (item: PotluckItem) => {
+    setEditingItemId(item.id);
+    setFormData({
+      item_name: item.item_name,
+      quantity: item.quantity,
+      category: item.category || '',
+      notes: item.notes || '',
+    });
+    setShowAddModal(true);
+  };
+
+  const handleSaveSuggestedItem = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
-      await api.post(`/potluck/event/${eventId}/suggested-items`, formData);
-      toast.success('Suggested item added!');
+      if (editingItemId !== null) {
+        await api.put(`/potluck/event/${eventId}/suggested-items/${editingItemId}`, formData);
+        toast.success('Item updated');
+      } else {
+        await api.post(`/potluck/event/${eventId}/suggested-items`, formData);
+        toast.success('Suggested item added!');
+      }
       setShowAddModal(false);
-      setFormData({
-        item_name: '',
-        quantity: 1,
-        category: '',
-        notes: ''
-      });
+      resetSuggestForm();
       fetchItems();
     } catch (error: unknown) {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = (data?.error as string) || 'Failed to add suggested item';
+      const errorMsg =
+        (data?.error as string) ||
+        (editingItemId !== null ? 'Failed to update item' : 'Failed to add suggested item');
       toast.error(errorMsg);
     } finally {
       setSubmitting(false);
@@ -219,7 +293,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
             </h3>
             <button
               type="button"
-              onClick={() => setShowAddModal(true)}
+              onClick={openSuggestModal}
               className="btn btn-primary btn-sm shrink-0 whitespace-nowrap"
             >
               + Suggest Item
@@ -236,6 +310,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
           <PotluckItemsTable
             items={suggestedUnclaimed}
             variant="unclaimed"
+            onEdit={openEditSuggestedItem}
             onDelete={handleDeleteSuggestedItem}
           />
         </div>
@@ -250,6 +325,7 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
           <PotluckItemsTable
             items={suggestedClaimed}
             variant="claimed"
+            onEdit={openEditSuggestedItem}
             onDelete={handleDeleteSuggestedItem}
           />
         </div>
@@ -281,20 +357,26 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Suggest Item</h3>
+              <h3 className="text-xl font-bold">{editingItemId !== null ? 'Edit Item' : 'Suggest Item'}</h3>
               <button
-                onClick={() => setShowAddModal(false)}
+                type="button"
+                onClick={() => {
+                  setShowAddModal(false);
+                  resetSuggestForm();
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-sm text-gray-600 mb-4">
-              Add items you'd like guests to bring. Guests can claim these items from the event page.
-            </p>
+            {editingItemId === null && (
+              <p className="text-sm text-gray-600 mb-4">
+                Add items you&apos;d like guests to bring. Guests can claim these items from the event page.
+              </p>
+            )}
 
-            <form onSubmit={handleAddSuggestedItem} className="space-y-4">
+            <form onSubmit={handleSaveSuggestedItem} className="space-y-4">
               <div>
                 <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
                   Category
@@ -367,11 +449,14 @@ const PotluckManagement = ({ eventId }: PotluckManagementProps) => {
                   disabled={submitting}
                   className="btn btn-primary flex-1"
                 >
-                  {submitting ? 'Saving...' : 'Suggest Item'}
+                  {submitting ? 'Saving...' : editingItemId !== null ? 'Save' : 'Suggest Item'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetSuggestForm();
+                  }}
                   className="btn btn-secondary"
                 >
                   Cancel
