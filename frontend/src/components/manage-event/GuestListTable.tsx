@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Guest } from '../../types';
 import { isOrganizerGuest } from '../../utils/eventOrganizerGuest';
 import AdditionalGuestsControl from './AdditionalGuestsControl';
@@ -14,6 +14,69 @@ function rsvpBadge(guest: Guest): { text: string; className: string } {
     default:
       return { text: 'No reply', className: 'bg-neutral-100 text-neutral-600' };
   }
+}
+
+type GuestSortKey = 'name' | 'email' | 'status';
+type GuestSortDir = 'asc' | 'desc';
+
+const RSVP_STATUS_SORT_ORDER: Record<Guest['rsvp_status'], number> = {
+  attending: 0,
+  maybe: 1,
+  not_attending: 2,
+  no_response: 3,
+};
+
+function SortableGuestHeader({
+  label,
+  column,
+  sortKey,
+  sortDir,
+  onSort,
+}: {
+  label: string;
+  column: GuestSortKey;
+  sortKey: GuestSortKey | null;
+  sortDir: GuestSortDir;
+  onSort: (column: GuestSortKey) => void;
+}) {
+  const active = sortKey === column;
+  const sortTitle = !active
+    ? `Sort by ${label}`
+    : sortDir === 'asc'
+      ? `Sorted by ${label} ascending — click for descending`
+      : `Sorted by ${label} descending — click to clear sort`;
+
+  return (
+    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        title={sortTitle}
+        aria-label={sortTitle}
+        className={`inline-flex items-center gap-1 rounded-sm -ml-1 px-1 py-0.5 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+          active ? 'text-gray-900' : ''
+        }`}
+      >
+        <span>{label}</span>
+        <span className="inline-flex flex-col leading-none text-gray-300" aria-hidden="true">
+          <svg
+            className={`w-3 h-3 ${active && sortDir === 'asc' ? 'text-primary-600' : ''}`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M10 5l4 6H6l4-6z" />
+          </svg>
+          <svg
+            className={`-mt-1.5 w-3 h-3 ${active && sortDir === 'desc' ? 'text-primary-600' : ''}`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M10 15l-4-6h8l-4 6z" />
+          </svg>
+        </span>
+      </button>
+    </th>
+  );
 }
 
 function GuestStatusInline({ guest }: { guest: Guest }) {
@@ -75,6 +138,48 @@ const GuestListTable = ({
   additionalGuestsSavingId,
   emptyMessage = 'No guests added yet. Add some above!',
 }: GuestListTableProps) => {
+  const [sortKey, setSortKey] = useState<GuestSortKey | null>(null);
+  const [sortDir, setSortDir] = useState<GuestSortDir>('asc');
+
+  const handleSort = (column: GuestSortKey) => {
+    if (sortKey !== column) {
+      setSortKey(column);
+      setSortDir('asc');
+      return;
+    }
+    if (sortDir === 'asc') {
+      setSortDir('desc');
+      return;
+    }
+    setSortKey(null);
+    setSortDir('asc');
+  };
+
+  const sortedGuests = useMemo(() => {
+    if (!sortKey) return guests;
+
+    const next = [...guests];
+    next.sort((a, b) => {
+      const aHost = isOrganizerGuest(a, ownerEmail);
+      const bHost = isOrganizerGuest(b, ownerEmail);
+      if (aHost !== bHost) return aHost ? -1 : 1;
+
+      let cmp = 0;
+      if (sortKey === 'name') {
+        cmp = (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+      } else if (sortKey === 'email') {
+        cmp = (a.email || '').localeCompare(b.email || '', undefined, { sensitivity: 'base' });
+      } else {
+        const aRank = RSVP_STATUS_SORT_ORDER[a.rsvp_status] ?? 99;
+        const bRank = RSVP_STATUS_SORT_ORDER[b.rsvp_status] ?? 99;
+        cmp = aRank - bRank;
+      }
+
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return next;
+  }, [guests, sortKey, sortDir, ownerEmail]);
+
   return (
   <div className="card">
     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -93,9 +198,27 @@ const GuestListTable = ({
         <table className="min-w-[720px] w-full border-collapse">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Name</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Email</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
+              <SortableGuestHeader
+                label="Name"
+                column="name"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableGuestHeader
+                label="Email"
+                column="email"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableGuestHeader
+                label="Status"
+                column="status"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Num guests</th>
               {showDonatedColumn && (
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Donated</th>
@@ -104,7 +227,7 @@ const GuestListTable = ({
             </tr>
           </thead>
           <tbody className="bg-white">
-            {guests.map((guest) => {
+            {sortedGuests.map((guest) => {
               const organizer = isOrganizerGuest(guest, ownerEmail);
               const isEditing = editingGuestId === guest.id;
 
