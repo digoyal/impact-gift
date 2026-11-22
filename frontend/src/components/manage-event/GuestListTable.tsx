@@ -58,22 +58,19 @@ function SortableGuestHeader({
         }`}
       >
         <span>{label}</span>
-        <span className="inline-flex flex-col leading-none text-gray-300" aria-hidden="true">
+        {active && (
           <svg
-            className={`w-3 h-3 ${active && sortDir === 'asc' ? 'text-primary-600' : ''}`}
-            viewBox="0 0 20 20"
-            fill="currentColor"
+            className={`w-3.5 h-3.5 shrink-0 text-primary-600 transition-transform ${
+              sortDir === 'desc' ? 'rotate-180' : ''
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
           >
-            <path d="M10 5l4 6H6l4-6z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
           </svg>
-          <svg
-            className={`-mt-1.5 w-3 h-3 ${active && sortDir === 'desc' ? 'text-primary-600' : ''}`}
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path d="M10 15l-4-6h8l-4 6z" />
-          </svg>
-        </span>
+        )}
       </button>
     </th>
   );
