@@ -1,15 +1,13 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import api from '../utils/api';
-import { parseLocalDate, formatTime } from '../utils/dateUtils';
+import { parseLocalDate, formatEventTimeWithZone, isEventDatePast } from '../utils/dateUtils';
 import { Event } from '../types';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import FavoriteCharities from '../components/FavoriteCharities';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
-import { isImpactGiftEnabled } from '../utils/impactGift';
-
 interface Invitation {
   id: number;
   event_id: number;
@@ -28,9 +26,105 @@ interface Invitation {
   cancelled?: boolean;
   cancelled_at?: string;
   cancellation_reason?: string;
+  event_image_url?: string;
 }
 
 type DashboardTab = 'events' | 'invitations';
+
+interface DashboardEventCardProps {
+  title: string;
+  eventDate: string;
+  startTime?: string;
+  imageUrl?: string;
+  hostLabel: string;
+  href: string;
+  cancelled?: boolean;
+  animationDelay?: number;
+  badgeExtra?: ReactNode;
+}
+
+function DashboardEventCard({
+  title,
+  eventDate,
+  startTime,
+  imageUrl,
+  hostLabel,
+  href,
+  cancelled,
+  animationDelay = 0,
+  badgeExtra,
+}: DashboardEventCardProps) {
+  const timingLabel = isEventDatePast(eventDate) ? 'Past' : 'Upcoming';
+  const dateLine = format(parseLocalDate(eventDate), 'EEE MMM d, yyyy');
+  const timeLine = startTime ? formatEventTimeWithZone(startTime, eventDate) : '';
+
+  return (
+    <Link
+      to={href}
+      className={`card-hover group flex gap-4 sm:gap-5 p-4 sm:p-5 animate-fade-in ${
+        cancelled ? 'opacity-90 border border-neutral-300 bg-neutral-50' : ''
+      }`}
+      style={{ animationDelay: `${animationDelay}ms` }}
+    >
+      <div className="relative flex-shrink-0 w-20 sm:w-24 aspect-[3/4] rounded-lg overflow-hidden shadow-soft bg-neutral-100">
+        {imageUrl ? (
+          <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-300">
+            <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+        )}
+        <span className="absolute bottom-1.5 right-1.5 rounded-full bg-neutral-700/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+          {timingLabel}
+        </span>
+      </div>
+
+      <div className="min-w-0 flex-1 flex flex-col justify-center py-0.5">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <h3
+            className={`text-lg sm:text-xl font-bold leading-snug transition-colors ${
+              cancelled
+                ? 'text-neutral-600 line-through decoration-neutral-400'
+                : 'text-neutral-900 group-hover:text-primary-600'
+            }`}
+          >
+            {title}
+          </h3>
+          {badgeExtra}
+          {cancelled && (
+            <span className="badge bg-red-100 text-red-800 border border-red-200 text-xs font-semibold">
+              Cancelled
+            </span>
+          )}
+        </div>
+        <p className="text-sm sm:text-base text-neutral-800">{dateLine}</p>
+        {timeLine && <p className="text-sm text-neutral-700 mt-0.5">{timeLine}</p>}
+        <p className="text-sm text-neutral-500 mt-2">{hostLabel}</p>
+      </div>
+    </Link>
+  );
+}
+
+function DashboardEventCardSkeleton() {
+  return (
+    <div className="card flex gap-4 sm:gap-5 p-4 sm:p-5 animate-pulse">
+      <div className="flex-shrink-0 w-20 sm:w-24 aspect-[3/4] rounded-lg bg-neutral-200" />
+      <div className="flex-1 space-y-3 py-2">
+        <div className="h-6 bg-neutral-200 rounded w-3/4" />
+        <div className="h-4 bg-neutral-200 rounded w-1/2" />
+        <div className="h-4 bg-neutral-200 rounded w-1/3" />
+        <div className="h-4 bg-neutral-200 rounded w-2/5" />
+      </div>
+    </div>
+  );
+}
 
 const dashboardTabs: DashboardTab[] = ['events', 'invitations'];
 
@@ -50,15 +144,6 @@ const Dashboard = () => {
   const [commitmentsReceived, setCommitmentsReceived] = useState({ count: 0, amount: 0 });
   const [commitmentsLoading, setCommitmentsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('events');
-
-  const getCharityInitials = (charityName: string) => {
-    return charityName
-      .split(' ')
-      .filter(word => word.length > 0)
-      .map(word => word[0].toUpperCase())
-      .slice(0, 2)
-      .join('');
-  };
 
   useEffect(() => {
     // Wait for auth to finish loading before fetching data
@@ -232,13 +317,9 @@ const Dashboard = () => {
           </div>
 
           {invitationsLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-4 max-w-3xl">
               {[1, 2].map((i) => (
-                <div key={i} className="card animate-pulse">
-                  <div className="h-32 bg-neutral-200 rounded-xl mb-3"></div>
-                  <div className="h-4 bg-neutral-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-neutral-200 rounded w-1/2"></div>
-                </div>
+                <DashboardEventCardSkeleton key={i} />
               ))}
             </div>
           ) : invitations.length === 0 ? (
@@ -250,111 +331,19 @@ const Dashboard = () => {
               <p className="text-body text-neutral-600">When you receive event invitations, they'll appear here</p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-4 max-w-3xl">
               {invitations.map((invitation, index) => (
-                <div
+                <DashboardEventCard
                   key={invitation.id}
-                  className={`card-hover group overflow-hidden animate-fade-in ${invitation.cancelled ? 'opacity-90 border border-neutral-300 bg-neutral-50' : ''}`}
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  {/* Event Header */}
-                  <div className="mb-4">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h3 className={`text-heading-4 mb-0 ${invitation.cancelled ? 'text-neutral-600 line-through decoration-neutral-400' : 'text-neutral-900 group-hover:text-primary-600'} transition-colors`}>
-                        {invitation.event_title}
-                      </h3>
-                      {invitation.cancelled && (
-                        <span className="badge bg-red-100 text-red-800 border border-red-200 text-xs font-semibold">
-                          Cancelled
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-caption">
-                      Hosted by {invitation.host_first_name} {invitation.host_last_name}
-                    </p>
-                  </div>
-
-                  {/* Event Details */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-caption">
-                      <svg className="w-4 h-4 mr-2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {format(parseLocalDate(invitation.event_date), 'MMM dd, yyyy')}
-                      {invitation.start_time && ` at ${formatTime(invitation.start_time)}`}
-                    </div>
-                    {invitation.venue_name && (
-                      <div className="flex items-center text-caption">
-                        <svg className="w-4 h-4 mr-2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        {invitation.venue_name}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* RSVP Status */}
-                  <div className="mb-4">
-                    {invitation.cancelled ? (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                        <p className="text-sm font-semibold text-red-900">This event has been cancelled</p>
-                        {invitation.cancellation_reason && (
-                          <p className="text-xs text-red-800 mt-1">{invitation.cancellation_reason}</p>
-                        )}
-                      </div>
-                    ) : invitation.rsvp_status === 'no_response' ? (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="text-sm font-semibold text-yellow-800">
-                          RSVP Pending
-                        </p>
-                      </div>
-                    ) : invitation.rsvp_status === 'attending' ? (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <p className="text-sm font-semibold text-green-800">
-                          {invitation.additional_guests && invitation.additional_guests > 0
-                            ? `Attending with ${invitation.additional_guests} guest${invitation.additional_guests !== 1 ? 's' : ''}`
-                            : 'Attending'}
-                        </p>
-                      </div>
-                    ) : invitation.rsvp_status === 'not_attending' ? (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        <p className="text-sm font-semibold text-red-800">
-                          Not Attending
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-neutral-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="text-sm font-semibold text-neutral-800">
-                          Maybe
-                          {invitation.additional_guests && invitation.additional_guests > 0
-                            ? ` with ${invitation.additional_guests} guest${invitation.additional_guests !== 1 ? 's' : ''}`
-                            : ''}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Button */}
-                  <Link
-                    to={`/event/${invitation.event_slug}?email=${encodeURIComponent(invitation.email)}`}
-                    className={`btn w-full text-center text-sm ${invitation.cancelled ? 'btn-secondary' : 'btn-primary'}`}
-                  >
-                    {invitation.cancelled ? 'View event details' : 'View Event'}
-                  </Link>
-                </div>
+                  title={invitation.event_title}
+                  eventDate={invitation.event_date}
+                  startTime={invitation.start_time}
+                  imageUrl={invitation.event_image_url}
+                  hostLabel={`Hosted by ${invitation.host_first_name} ${invitation.host_last_name}`.trim()}
+                  href={`/event/${invitation.event_slug}?email=${encodeURIComponent(invitation.email)}`}
+                  cancelled={invitation.cancelled}
+                  animationDelay={index * 50}
+                />
               ))}
             </div>
           )}
@@ -376,13 +365,9 @@ const Dashboard = () => {
           </div>
 
           {eventsLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="flex flex-col gap-4 max-w-3xl">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="card animate-pulse">
-                  <div className="h-48 bg-neutral-200 rounded-xl mb-4"></div>
-                  <div className="h-4 bg-neutral-200 rounded w-3/4 mb-3"></div>
-                  <div className="h-4 bg-neutral-200 rounded w-1/2"></div>
-                </div>
+                <DashboardEventCardSkeleton key={i} />
               ))}
             </div>
           ) : eventsError ? (
@@ -424,143 +409,24 @@ const Dashboard = () => {
               </Link>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="flex flex-col gap-4 max-w-3xl">
               {events.map((event, index) => (
-                <div
+                <DashboardEventCard
                   key={event.id}
-                  className={`card-hover group overflow-hidden animate-fade-in ${event.cancelled ? 'opacity-90 border border-neutral-300 bg-neutral-50' : ''}`}
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  {/* Event Header */}
-                  <div className="mb-6">
-                    {event.cancelled && (
-                      <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <span className="badge bg-red-100 text-red-800 border border-red-200 text-xs font-semibold">
-                          Cancelled
-                        </span>
-                        {event.cancelled_at && (
-                          <span className="text-xs text-neutral-500">
-                            {format(new Date(event.cancelled_at), 'MMM d, yyyy')}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3 mb-2">
-                      {isImpactGiftEnabled(event) && event.charities && event.charities.length > 0 && (
-                        <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm shadow-soft flex-shrink-0">
-                          {getCharityInitials(event.charities[0].name)}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className={`text-heading-4 truncate transition-colors ${event.cancelled ? 'text-neutral-600' : 'text-neutral-900 group-hover:text-primary-600'}`}>
-                            {event.title}
-                          </h3>
-                          {event.user_role === 'cohost' && (
-                            <span className="badge badge-primary text-xs flex-shrink-0">Co-Host</span>
-                          )}
-                        </div>
-                        {isImpactGiftEnabled(event) && event.charities && event.charities.length > 0 && (
-                          <p className="text-caption truncate">
-                            {event.charities.length === 1
-                              ? event.charities[0].name
-                              : `${event.charities[0].name} +${event.charities.length - 1} more`}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Event Details */}
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center text-caption">
-                      <svg className="w-4 h-4 mr-2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {format(parseLocalDate(event.event_date), 'MMMM dd, yyyy')}
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="badge badge-primary capitalize">{event.event_type}</span>
-                    </div>
-                  </div>
-
-                  {/* Event Stats - Show different stats based on whether event has charities */}
-                  <div className="bg-neutral-50 rounded-xl p-5 mb-6 border border-neutral-200">
-                    {isImpactGiftEnabled(event) ? (
-                      // Impact Gift event - show Total Raised + RSVP count
-                      <>
-                        <div className="flex justify-between items-baseline mb-3">
-                          <span className="text-caption font-medium">Total Raised</span>
-                          <span className="text-3xl font-bold text-primary-600">
-                            ${Number(event.total_raised || 0).toFixed(2)}
-                          </span>
-                        </div>
-
-                        {event.goal_amount && (
-                          <>
-                            <div className="w-full bg-neutral-200 rounded-full h-2.5 mb-2 overflow-hidden">
-                              <div
-                                className="bg-primary-600 h-2.5 rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${Math.min((Number(event.total_raised) / Number(event.goal_amount)) * 100, 100)}%`
-                                }}
-                              />
-                            </div>
-                            <div className="flex justify-between text-caption">
-                              <span>{event.donation_count} donation{event.donation_count !== 1 ? 's' : ''}</span>
-                              <span>Goal: ${Number(event.goal_amount).toFixed(2)}</span>
-                            </div>
-                          </>
-                        )}
-
-                        {!event.goal_amount && (
-                          <p className="text-caption mb-2">
-                            {event.donation_count} donation{event.donation_count !== 1 ? 's' : ''}
-                          </p>
-                        )}
-
-                        {/* Show RSVP count for charity events too */}
-                        <div className="pt-3 border-t border-neutral-200 mt-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-caption font-medium">RSVPs</span>
-                            <span className="text-lg font-bold text-neutral-900">
-                              {event.attending_count || 0} attending
-                            </span>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      // Event without charities - show RSVP count only
-                      <>
-                        <div className="flex justify-between items-baseline mb-3">
-                          <span className="text-caption font-medium">RSVPs</span>
-                          <span className="text-3xl font-bold text-primary-600">
-                            {event.attending_count || 0}
-                          </span>
-                        </div>
-                        <p className="text-caption">
-                          {event.attending_count === 1 ? 'guest' : 'guests'} attending
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    <Link
-                      to={`/event/${event.slug}/manage`}
-                      className={`flex-1 btn text-center text-sm ${event.cancelled ? 'btn-secondary' : 'btn-primary'}`}
-                    >
-                      Manage
-                    </Link>
-                    <Link
-                      to={`/event/${event.slug}`}
-                      className="flex-1 btn btn-secondary text-center text-sm"
-                    >
-                      View Page
-                    </Link>
-                  </div>
-                </div>
+                  title={event.title}
+                  eventDate={event.event_date}
+                  startTime={event.start_time}
+                  imageUrl={event.event_image_url}
+                  hostLabel="Hosted by you"
+                  href={`/event/${event.slug}/manage`}
+                  cancelled={event.cancelled}
+                  animationDelay={index * 50}
+                  badgeExtra={
+                    event.user_role === 'cohost' ? (
+                      <span className="badge badge-primary text-xs flex-shrink-0">Co-Host</span>
+                    ) : undefined
+                  }
+                />
               ))}
             </div>
           )}

@@ -65,6 +65,7 @@ router.get('/summary', authenticate, async (req: AuthRequest, res: Response) => 
                 e.event_type,
                 e.venue_name,
                 e.start_time,
+                e.event_image_url,
                 e.cancelled,
                 e.cancelled_at,
                 e.cancellation_reason,

@@ -22,6 +22,7 @@ router.get('/my-invitations', authenticate, async (req: AuthRequest, res: Respon
               e.event_type,
               e.venue_name,
               e.start_time,
+              e.event_image_url,
               e.cancelled,
               e.cancelled_at,
               e.cancellation_reason,

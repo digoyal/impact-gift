@@ -38,3 +38,33 @@ export function formatTime(timeString: string): string {
 
   return `${hours}:${minutes} ${period}`;
 }
+
+/**
+ * Event start time in 12-hour form with a short timezone label (local display).
+ */
+export function formatEventTimeWithZone(timeString: string | undefined, eventDate: string): string {
+  if (!timeString) return '';
+
+  const formatted = formatTime(timeString);
+  const parts = timeString.split(':');
+  const hours = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1] ?? '0', 10);
+  const when = parseLocalDate(eventDate);
+  when.setHours(hours, minutes, 0, 0);
+
+  const zone =
+    new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+      .formatToParts(when)
+      .find((part) => part.type === 'timeZoneName')?.value ?? '';
+
+  return zone ? `${formatted} ${zone}` : formatted;
+}
+
+/** Whether the calendar date is before today (local). */
+export function isEventDatePast(eventDate: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDay = parseLocalDate(eventDate);
+  eventDay.setHours(0, 0, 0, 0);
+  return eventDay < today;
+}
