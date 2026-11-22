@@ -96,13 +96,6 @@ const Navbar = () => {
         <div className="px-4 py-4 space-y-2 bg-white">
           {user ? (
             <>
-              <Link
-                to="/dashboard"
-                className="block px-4 py-3 rounded-lg text-neutral-900 hover:bg-neutral-100 font-medium transition-colors"
-                onClick={closeMobileMenu}
-              >
-                Dashboard
-              </Link>
               {user.charity_page_slug && (
                 <Link
                   to={`/charity/${user.charity_page_slug}`}
@@ -113,25 +106,11 @@ const Navbar = () => {
                 </Link>
               )}
               <Link
-                to="/commitments"
-                className="block px-4 py-3 rounded-lg text-neutral-900 hover:bg-neutral-100 font-medium transition-colors"
-                onClick={closeMobileMenu}
-              >
-                Commitments
-              </Link>
-              <Link
                 to="/profile"
                 className="block px-4 py-3 rounded-lg text-neutral-900 hover:bg-neutral-100 font-medium transition-colors"
                 onClick={closeMobileMenu}
               >
                 Profile
-              </Link>
-              <Link
-                to="/create-event"
-                className="block btn btn-primary w-full text-center mt-2"
-                onClick={closeMobileMenu}
-              >
-                Create Event
               </Link>
               <button
                 onClick={handleLogout}
