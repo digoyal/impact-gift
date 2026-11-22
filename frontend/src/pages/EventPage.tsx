@@ -230,11 +230,11 @@ const EventPage = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-          <div className="md:col-span-2 space-y-6 lg:space-y-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 lg:py-8">
+        <div className="grid md:grid-cols-3 gap-4 lg:gap-6">
+          <div className="md:col-span-2 space-y-4">
             {event.description && event.description.trim() && (
-              <div className="card">
+              <div className="card !py-3 !px-4 sm:!px-5">
                 <p className="text-body-large text-neutral-700 whitespace-pre-wrap leading-relaxed">{event.description}</p>
               </div>
             )}
