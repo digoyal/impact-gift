@@ -12,6 +12,9 @@ type PotluckTableVariant = 'unclaimed' | 'claimed' | 'guest';
 
 const formatCategory = (category?: string) => (category?.trim() ? category : '—');
 
+const formatItemWithQty = (item: PotluckItem) =>
+  item.quantity > 1 ? `${item.item_name} × ${item.quantity}` : item.item_name;
+
 const PotluckItemsTable = ({
   items,
   variant,
@@ -28,51 +31,90 @@ const PotluckItemsTable = ({
       : variant === 'claimed'
         ? 'bg-green-50/40'
         : 'bg-blue-50/30';
+  const compactRows = variant !== 'unclaimed';
 
   return (
     <div className="overflow-x-auto -mx-1 sm:mx-0">
-      <table className="min-w-[640px] w-full divide-y divide-gray-200 text-sm">
+      <table className="min-w-[520px] w-full border-collapse text-sm">
         <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
           <tr>
-            <th className="px-2 py-1.5 text-left">Category</th>
-            <th className="px-2 py-1.5 text-left">Item</th>
-            <th className="px-2 py-1.5 text-left w-14">Qty</th>
-            {variant === 'unclaimed' ? (
-              <th className="px-2 py-1.5 text-left">Status</th>
+            {compactRows ? (
+              <>
+                <th className="px-3 py-2 text-left">Item</th>
+                <th className="px-3 py-2 text-left w-32">Category</th>
+                <th className="px-3 py-2 text-left w-36">{personLabel}</th>
+                <th className="px-3 py-2 text-left">Notes</th>
+              </>
             ) : (
-              <th className="px-2 py-1.5 text-left">{personLabel}</th>
+              <>
+                <th className="px-3 py-2 text-left w-32">Category</th>
+                <th className="px-3 py-2 text-left">Item</th>
+                <th className="px-3 py-2 text-left w-14">Qty</th>
+                <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-left">Notes</th>
+              </>
             )}
-            <th className="px-2 py-1.5 text-left">Notes</th>
-            {onDelete && <th className="px-2 py-1.5 text-right">Actions</th>}
+            {onDelete && <th className="px-3 py-2 text-left">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 bg-white">
           {items.map((item) => (
             <tr key={item.id} className={rowTint}>
-              <td className="px-2 py-1.5 text-xs text-gray-700 whitespace-nowrap">{formatCategory(item.category)}</td>
-              <td className="px-2 py-1.5 text-xs font-medium text-gray-900 whitespace-nowrap">{item.item_name}</td>
-              <td className="px-2 py-1.5 text-xs text-gray-700">{item.quantity}</td>
-              {variant === 'unclaimed' ? (
-                <td className="px-2 py-1.5 whitespace-nowrap">
-                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
-                    Waiting for guest
-                  </span>
-                </td>
-              ) : (
-                <td className="px-2 py-1.5 text-xs text-gray-700">
-                  <span className="font-medium">{item.guest_name || '—'}</span>
-                  {item.guest_email && (
-                    <span className="block text-xs text-gray-500 truncate max-w-[12rem]" title={item.guest_email}>
-                      {item.guest_email}
+              {compactRows ? (
+                <>
+                  <td className="px-3 py-2 text-xs font-medium text-gray-900 whitespace-nowrap align-middle">
+                    <span className="truncate max-w-[14rem] inline-block" title={formatItemWithQty(item)}>
+                      {formatItemWithQty(item)}
                     </span>
-                  )}
-                </td>
+                  </td>
+                  <td className="px-3 py-2 align-middle whitespace-nowrap">
+                    <span className="inline-flex text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                      {formatCategory(item.category)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-800 align-middle whitespace-nowrap">
+                    <span
+                      className="font-medium truncate max-w-[9rem] inline-block align-bottom"
+                      title={
+                        item.guest_email
+                          ? `${item.guest_name || ''} (${item.guest_email})`.trim()
+                          : item.guest_name || undefined
+                      }
+                    >
+                      {item.guest_name || '—'}
+                    </span>
+                  </td>
+                  <td
+                    className="px-3 py-2 text-xs text-gray-600 align-middle max-w-[10rem] truncate italic"
+                    title={item.notes || undefined}
+                  >
+                    {item.notes?.trim() ? item.notes : '—'}
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td className="px-3 py-2 text-xs text-gray-700 whitespace-nowrap align-middle">
+                    {formatCategory(item.category)}
+                  </td>
+                  <td className="px-3 py-2 text-xs font-medium text-gray-900 whitespace-nowrap align-middle">
+                    {item.item_name}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-700 align-middle">{item.quantity}</td>
+                  <td className="px-3 py-2 whitespace-nowrap align-middle">
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
+                      Waiting for guest
+                    </span>
+                  </td>
+                  <td
+                    className="px-3 py-2 text-xs text-gray-600 max-w-[10rem] truncate italic align-middle"
+                    title={item.notes || undefined}
+                  >
+                    {item.notes?.trim() ? item.notes : '—'}
+                  </td>
+                </>
               )}
-              <td className="px-2 py-1.5 text-xs text-gray-600 max-w-[10rem] truncate italic" title={item.notes || undefined}>
-                {item.notes?.trim() ? item.notes : '—'}
-              </td>
               {onDelete && (
-                <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                <td className="px-3 py-2 text-left whitespace-nowrap align-middle">
                   <button
                     type="button"
                     onClick={() => onDelete(item.id)}
