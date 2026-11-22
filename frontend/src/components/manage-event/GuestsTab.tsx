@@ -8,7 +8,7 @@ interface GuestsTabProps {
   ownerEmail: string | null;
   guests: Guest[];
   allowAdditionalGuests?: boolean;
-  impactGiftOn?: boolean;
+  showDonatedColumn?: boolean;
   guestEmail: string;
   guestName: string;
   onGuestEmailChange: (value: string) => void;
@@ -39,7 +39,7 @@ const GuestsTab = ({
   ownerEmail,
   guests,
   allowAdditionalGuests = true,
-  impactGiftOn = false,
+  showDonatedColumn = false,
   guestEmail,
   guestName,
   onGuestEmailChange,
@@ -125,7 +125,7 @@ const GuestsTab = ({
         ownerEmail={ownerEmail}
         guests={guests}
         allowAdditionalGuests={allowAdditionalGuests}
-        impactGiftOn={impactGiftOn}
+        showDonatedColumn={showDonatedColumn}
         pendingInvites={pendingInvites}
         onSendInvitations={onSendInvitations}
         editingGuestId={editingGuestId}

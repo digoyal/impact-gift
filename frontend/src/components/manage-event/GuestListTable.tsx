@@ -32,7 +32,7 @@ export interface GuestListTableProps {
   ownerEmail: string | null;
   guests: Guest[];
   allowAdditionalGuests?: boolean;
-  impactGiftOn?: boolean;
+  showDonatedColumn?: boolean;
   pendingInvites?: number;
   onSendInvitations?: () => void;
   editingGuestId: number | null;
@@ -56,7 +56,7 @@ const GuestListTable = ({
   ownerEmail,
   guests,
   allowAdditionalGuests = true,
-  impactGiftOn = false,
+  showDonatedColumn = false,
   pendingInvites = 0,
   onSendInvitations,
   editingGuestId,
@@ -97,7 +97,7 @@ const GuestListTable = ({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Email</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Num guests</th>
-              {impactGiftOn && (
+              {showDonatedColumn && (
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Donated</th>
               )}
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
@@ -141,7 +141,7 @@ const GuestListTable = ({
                         onChange={onEditAdditionalGuestsChange}
                       />
                     </td>
-                    {impactGiftOn && <td className="px-4 py-3 text-sm text-gray-400">—</td>}
+                    {showDonatedColumn && <td className="px-4 py-3 text-sm text-gray-400">—</td>}
                     <td className="px-4 py-3 text-right text-sm whitespace-nowrap space-x-2">
                       <button
                         type="button"
@@ -160,7 +160,7 @@ const GuestListTable = ({
 
               const comment = guest.rsvp_comment?.trim();
               const rowClass = organizer ? 'bg-neutral-50' : undefined;
-              const columnCount = impactGiftOn ? 6 : 5;
+              const columnCount = showDonatedColumn ? 6 : 5;
 
               const nameCell = (
                 <td className="px-4 py-3 align-top text-sm whitespace-nowrap">
@@ -199,7 +199,7 @@ const GuestListTable = ({
                 </td>
               );
 
-              const donatedCell = impactGiftOn ? (
+              const donatedCell = showDonatedColumn ? (
                 <td className="px-4 py-3 align-top text-sm whitespace-nowrap">
                   {guest.has_donated ? (
                     <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>

@@ -16,7 +16,7 @@ import SettingsTab from '../components/manage-event/SettingsTab';
 import EventImageSelector from '../components/EventImageSelector';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { toastEmailSendError, toastEmailSendResult } from '../utils/emailSendFeedback';
-import { isImpactGiftEnabled } from '../utils/impactGift';
+import { eventHasSelectedCharity, isImpactGiftEnabled } from '../utils/impactGift';
 import {
   getEventOwnerEmail,
   isOrganizerGuest,
@@ -789,6 +789,7 @@ const ManageEvent = () => {
     return 0;
   });
   const impactGiftOn = isImpactGiftEnabled(event);
+  const showGuestDonatedColumn = eventHasSelectedCharity(event);
 
   const manageTabs: TabType[] = [
     'details',
@@ -1143,7 +1144,7 @@ const ManageEvent = () => {
           ownerEmail={ownerEmail}
           guests={displayGuests}
           allowAdditionalGuests={formData.allow_additional_guests}
-          impactGiftOn={impactGiftOn}
+          showDonatedColumn={showGuestDonatedColumn}
           guestEmail={guestEmail}
           guestName={guestName}
           onGuestEmailChange={setGuestEmail}
