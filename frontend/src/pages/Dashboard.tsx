@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import api from '../utils/api';
@@ -30,6 +30,15 @@ interface Invitation {
   cancellation_reason?: string;
 }
 
+type DashboardTab = 'events' | 'invitations';
+
+const dashboardTabs: DashboardTab[] = ['events', 'invitations'];
+
+const dashboardTabLabels: Record<DashboardTab, string> = {
+  events: 'My Events',
+  invitations: 'My Invitations',
+};
+
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
@@ -40,6 +49,7 @@ const Dashboard = () => {
   const [commitmentsMade, setCommitmentsMade] = useState({ count: 0, amount: 0 });
   const [commitmentsReceived, setCommitmentsReceived] = useState({ count: 0, amount: 0 });
   const [commitmentsLoading, setCommitmentsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<DashboardTab>('events');
 
   const getCharityInitials = (charityName: string) => {
     return charityName
@@ -179,10 +189,45 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-neutral-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Received Invitations Section */}
+        <div className="mb-8">
+          <h1 className="text-display text-neutral-900 mb-2">Dashboard</h1>
+          <p className="text-body-large text-neutral-600">Your events and invitations</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="border-b border-neutral-200 mb-8 -mx-4 sm:mx-0">
+          <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
+            <nav className="-mb-px flex flex-wrap items-center gap-x-0.5 sm:gap-x-1">
+              {dashboardTabs.map((tab, index) => (
+                <Fragment key={tab}>
+                  {index > 0 && (
+                    <span
+                      className="text-neutral-300 text-sm leading-none select-none px-0.5"
+                      aria-hidden="true"
+                    >
+                      ·
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={`py-2.5 px-1 sm:px-1.5 border-b-2 font-medium text-sm whitespace-nowrap ${
+                      activeTab === tab
+                        ? 'border-primary-600 text-primary-600'
+                        : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
+                    }`}
+                  >
+                    {dashboardTabLabels[tab]}
+                  </button>
+                </Fragment>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {activeTab === 'invitations' && (
         <div className="mb-16">
           <div className="mb-8">
-            <h2 className="text-heading-1 text-neutral-900 mb-2">My Invitations</h2>
             <p className="text-body-large text-neutral-600">Events you've been invited to</p>
           </div>
 
@@ -314,12 +359,12 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+        )}
 
-        {/* Events Section */}
+        {activeTab === 'events' && (
         <div className="mb-16">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-display text-neutral-900 mb-2">My Events</h1>
               <p className="text-body-large text-neutral-600">Events you're hosting</p>
             </div>
             <Link to="/create-event" className="btn btn-primary">
@@ -520,6 +565,7 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+        )}
 
         {/* Quick Stats - Commitments Summary */}
         <div className="mb-12 animate-fade-in" style={{ animationDelay: '100ms' }}>
