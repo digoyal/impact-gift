@@ -311,28 +311,6 @@ const ManageEvent = () => {
     }
   };
 
-  const duplicateEvent = async () => {
-    if (!event) return;
-
-    if (!window.confirm('Are you sure you want to duplicate this event? This will create a copy with all settings, charities, and co-hosts.')) {
-      return;
-    }
-
-    try {
-      const response = await api.post(`/events/${event.id}/duplicate`);
-      toast.success('Event duplicated successfully!');
-
-      // Navigate to the new event's manage page
-      setTimeout(() => {
-        navigate(`/event/${response.data.event.slug}/manage`);
-      }, 1000);
-    } catch (error: unknown) {
-      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = data?.error as string || 'Failed to duplicate event';
-      toast.error(errorMsg);
-    }
-  };
-
   const openMasterGuestList = async () => {
     setShowMasterListModal(true);
     setMasterListLoading(true);
@@ -860,16 +838,6 @@ const ManageEvent = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
               View Event
-            </button>
-            <button
-              onClick={duplicateEvent}
-              className="btn btn-secondary"
-              title="Create a copy of this event"
-            >
-              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              Duplicate
             </button>
             <button
               onClick={sendInvitations}
