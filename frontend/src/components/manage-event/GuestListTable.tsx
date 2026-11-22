@@ -100,7 +100,7 @@ const GuestListTable = ({
               {showDonatedColumn && (
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Donated</th>
               )}
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white">
@@ -142,7 +142,7 @@ const GuestListTable = ({
                       />
                     </td>
                     {showDonatedColumn && <td className="px-4 py-3 text-sm text-gray-400">—</td>}
-                    <td className="px-4 py-3 text-right text-sm whitespace-nowrap space-x-2">
+                    <td className="px-4 py-3 text-left text-sm whitespace-nowrap space-x-2">
                       <button
                         type="button"
                         onClick={() => onUpdateGuest(guest.id)}
@@ -210,7 +210,7 @@ const GuestListTable = ({
               ) : null;
 
               const actionsCell = (
-                <td className="px-4 py-3 align-top text-right text-sm whitespace-nowrap space-x-2">
+                <td className="px-4 py-3 align-top text-left text-sm whitespace-nowrap space-x-2">
                   {!organizer && guest.invitation_sent && (
                     <button
                       type="button"
