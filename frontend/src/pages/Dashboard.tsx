@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import api from '../utils/api';
@@ -112,6 +112,79 @@ function DashboardEventCard({
   );
 }
 
+type EventTimingFilter = 'current' | 'past';
+
+const defaultTimingFilters = (): Set<EventTimingFilter> => new Set(['current', 'past']);
+
+function matchesEventTimingFilter(eventDate: string, selected: Set<EventTimingFilter>): boolean {
+  if (selected.size === 0) return false;
+  const past = isEventDatePast(eventDate);
+  return (past && selected.has('past')) || (!past && selected.has('current'));
+}
+
+function DashboardTimingPills({
+  selected,
+  onChange,
+}: {
+  selected: Set<EventTimingFilter>;
+  onChange: (next: Set<EventTimingFilter>) => void;
+}) {
+  const toggle = (key: EventTimingFilter) => {
+    const next = new Set(selected);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    onChange(next);
+  };
+
+  const pillClass = (active: boolean) =>
+    `px-4 py-2 rounded-full text-sm font-medium transition-all ${
+      active
+        ? 'bg-primary-600 text-white shadow-md'
+        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+    }`;
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Filter events by timing">
+      <button
+        type="button"
+        onClick={() => toggle('current')}
+        className={pillClass(selected.has('current'))}
+        aria-pressed={selected.has('current')}
+      >
+        Current
+      </button>
+      <button
+        type="button"
+        onClick={() => toggle('past')}
+        className={pillClass(selected.has('past'))}
+        aria-pressed={selected.has('past')}
+      >
+        Past
+      </button>
+    </div>
+  );
+}
+
+function DashboardFilteredEmptyState() {
+  return (
+    <div className="card-info text-center py-12 animate-fade-in max-w-3xl">
+      <svg className="w-12 h-12 text-neutral-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+        />
+      </svg>
+      <h3 className="text-heading-3 mb-2 text-neutral-900">No matching events</h3>
+      <p className="text-body text-neutral-600">Turn on Current or Past to see events in that timeframe.</p>
+    </div>
+  );
+}
+
 function DashboardEventCardSkeleton() {
   return (
     <div className="card flex gap-4 sm:gap-5 p-4 sm:p-5 animate-pulse">
@@ -144,6 +217,17 @@ const Dashboard = () => {
   const [commitmentsReceived, setCommitmentsReceived] = useState({ count: 0, amount: 0 });
   const [commitmentsLoading, setCommitmentsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('events');
+  const [timingFilter, setTimingFilter] = useState<Set<EventTimingFilter>>(defaultTimingFilters);
+
+  const filteredEvents = useMemo(
+    () => events.filter((event) => matchesEventTimingFilter(event.event_date, timingFilter)),
+    [events, timingFilter]
+  );
+
+  const filteredInvitations = useMemo(
+    () => invitations.filter((inv) => matchesEventTimingFilter(inv.event_date, timingFilter)),
+    [invitations, timingFilter]
+  );
 
   useEffect(() => {
     // Wait for auth to finish loading before fetching data
@@ -331,21 +415,28 @@ const Dashboard = () => {
               <p className="text-body text-neutral-600">When you receive event invitations, they'll appear here</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-4 max-w-3xl">
-              {invitations.map((invitation, index) => (
-                <DashboardEventCard
-                  key={invitation.id}
-                  title={invitation.event_title}
-                  eventDate={invitation.event_date}
-                  startTime={invitation.start_time}
-                  imageUrl={invitation.event_image_url}
-                  hostLabel={`Hosted by ${invitation.host_first_name} ${invitation.host_last_name}`.trim()}
-                  href={`/event/${invitation.event_slug}?email=${encodeURIComponent(invitation.email)}`}
-                  cancelled={invitation.cancelled}
-                  animationDelay={index * 50}
-                />
-              ))}
-            </div>
+            <>
+              <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
+              {filteredInvitations.length === 0 ? (
+                <DashboardFilteredEmptyState />
+              ) : (
+                <div className="flex flex-col gap-4 max-w-3xl">
+                  {filteredInvitations.map((invitation, index) => (
+                    <DashboardEventCard
+                      key={invitation.id}
+                      title={invitation.event_title}
+                      eventDate={invitation.event_date}
+                      startTime={invitation.start_time}
+                      imageUrl={invitation.event_image_url}
+                      hostLabel={`Hosted by ${invitation.host_first_name} ${invitation.host_last_name}`.trim()}
+                      href={`/event/${invitation.event_slug}?email=${encodeURIComponent(invitation.email)}`}
+                      cancelled={invitation.cancelled}
+                      animationDelay={index * 50}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
         )}
@@ -409,26 +500,33 @@ const Dashboard = () => {
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col gap-4 max-w-3xl">
-              {events.map((event, index) => (
-                <DashboardEventCard
-                  key={event.id}
-                  title={event.title}
-                  eventDate={event.event_date}
-                  startTime={event.start_time}
-                  imageUrl={event.event_image_url}
-                  hostLabel="Hosted by you"
-                  href={`/event/${event.slug}/manage`}
-                  cancelled={event.cancelled}
-                  animationDelay={index * 50}
-                  badgeExtra={
-                    event.user_role === 'cohost' ? (
-                      <span className="badge badge-primary text-xs flex-shrink-0">Co-Host</span>
-                    ) : undefined
-                  }
-                />
-              ))}
-            </div>
+            <>
+              <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
+              {filteredEvents.length === 0 ? (
+                <DashboardFilteredEmptyState />
+              ) : (
+                <div className="flex flex-col gap-4 max-w-3xl">
+                  {filteredEvents.map((event, index) => (
+                    <DashboardEventCard
+                      key={event.id}
+                      title={event.title}
+                      eventDate={event.event_date}
+                      startTime={event.start_time}
+                      imageUrl={event.event_image_url}
+                      hostLabel="Hosted by you"
+                      href={`/event/${event.slug}/manage`}
+                      cancelled={event.cancelled}
+                      animationDelay={index * 50}
+                      badgeExtra={
+                        event.user_role === 'cohost' ? (
+                          <span className="badge badge-primary text-xs flex-shrink-0">Co-Host</span>
+                        ) : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
         )}
