@@ -51,7 +51,7 @@ interface DashboardEventCardProps {
   onToggleSelect?: () => void;
   showHostActions?: boolean;
   onDuplicate?: () => void;
-  onDelete?: () => void;
+  onCancel?: () => void;
   actionsBusy?: boolean;
 }
 
@@ -71,7 +71,7 @@ function DashboardEventCard({
   onToggleSelect,
   showHostActions = false,
   onDuplicate,
-  onDelete,
+  onCancel,
   actionsBusy = false,
 }: DashboardEventCardProps) {
   const timingLabel = isEventDatePast(eventDate, cancelled) ? 'Past' : 'Upcoming';
@@ -144,14 +144,14 @@ function DashboardEventCard({
               Duplicate
             </button>
           )}
-          {showHostActions && onDelete && (
+          {showHostActions && onCancel && (
             <button
               type="button"
               className={`${dashboardCardActionBtn} btn-secondary text-red-700 hover:text-red-800 border-red-200 hover:border-red-300`}
               disabled={actionsBusy}
-              onClick={onDelete}
+              onClick={onCancel}
             >
-              Delete
+              Cancel
             </button>
           )}
         </div>
@@ -314,6 +314,9 @@ const Dashboard = () => {
   const [timingFilter, setTimingFilter] = useState<Set<EventTimingFilter>>(defaultTimingFilters);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [eventActionBusy, setEventActionBusy] = useState(false);
+  const [cancelModalEvent, setCancelModalEvent] = useState<Event | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   const filteredEvents = useMemo(
     () => events.filter((event) => matchesEventTimingFilter(event.event_date, timingFilter, event.cancelled)),
@@ -355,25 +358,36 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteEvent = async (event: Event) => {
-    if (
-      !window.confirm(
-        'Delete this event? It will be removed from your dashboard and hidden from guests. This cannot be undone.'
-      )
-    ) {
-      return;
-    }
+  const openCancelEventModal = (event: Event) => {
+    setCancelModalEvent(event);
+    setCancellationReason('');
+  };
 
+  const closeCancelEventModal = () => {
+    if (cancelling) return;
+    setCancelModalEvent(null);
+    setCancellationReason('');
+  };
+
+  const confirmCancelEvent = async () => {
+    if (!cancelModalEvent) return;
+
+    setCancelling(true);
     setEventActionBusy(true);
     try {
-      await api.put(`/events/${event.slug}`, { is_active: false });
-      toast.success('Event deleted');
+      const response = await api.post(`/events/${cancelModalEvent.id}/cancel`, {
+        cancellation_reason: cancellationReason || undefined,
+      });
+      toast.success(`Event cancelled. ${response.data.notified_guests} guest(s) notified.`);
+      setCancelModalEvent(null);
+      setCancellationReason('');
       setSelectedEventId(null);
-      setEvents((prev) => prev.filter((e) => e.id !== event.id));
+      await fetchDashboardSummary();
     } catch (error: unknown) {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      toast.error((data?.error as string) || 'Failed to delete event');
+      toast.error((data?.error as string) || 'Failed to cancel event');
     } finally {
+      setCancelling(false);
       setEventActionBusy(false);
     }
   };
@@ -683,7 +697,11 @@ const Dashboard = () => {
                       onDuplicate={
                         event.user_role === 'owner' ? () => handleDuplicateEvent(event) : undefined
                       }
-                      onDelete={event.user_role === 'owner' ? () => handleDeleteEvent(event) : undefined}
+                      onCancel={
+                        event.user_role === 'owner' && !event.cancelled
+                          ? () => openCancelEventModal(event)
+                          : undefined
+                      }
                       actionsBusy={eventActionBusy}
                       badgeExtra={
                         event.user_role === 'cohost' ? (
@@ -761,6 +779,62 @@ const Dashboard = () => {
           <FavoriteCharities />
         </div>
       </div>
+
+      {cancelModalEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Cancel Event</h2>
+              <p className="text-sm text-gray-600 mt-1">{cancelModalEvent.title}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800">
+                  <strong>⚠️ Warning:</strong> This action cannot be undone. All invited guests will be notified that the
+                  event has been cancelled.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for cancellation (optional)
+                </label>
+                <textarea
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  placeholder="Let your guests know why you're cancelling..."
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                  rows={4}
+                  disabled={cancelling}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This message will be included in the cancellation email sent to all guests.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                type="button"
+                onClick={closeCancelEventModal}
+                disabled={cancelling}
+                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Keep Event
+              </button>
+              <button
+                type="button"
+                onClick={confirmCancelEvent}
+                disabled={cancelling}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cancelling ? 'Cancelling...' : 'Cancel Event'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
