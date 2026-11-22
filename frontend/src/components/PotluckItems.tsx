@@ -1,14 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
 import { PotluckItem } from '../types';
 import toast from 'react-hot-toast';
 import { isAxiosError } from '../utils/errors';
+import { findGuestByEmail } from '../utils/findGuestByEmail';
 
 interface PotluckItemsProps {
   eventId: number;
+  guestEmail?: string | null;
 }
 
-const PotluckItems = ({ eventId }: PotluckItemsProps) => {
+const emptyGuestFields = () => ({
+  guest_name: '',
+  guest_email: '',
+});
+
+const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
   const [items, setItems] = useState<PotluckItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -27,10 +34,58 @@ const PotluckItems = ({ eventId }: PotluckItemsProps) => {
     guest_email: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [guestLookupLoading, setGuestLookupLoading] = useState(false);
+  const [resolvedGuestName, setResolvedGuestName] = useState('');
+
+  const knownEmail = (guestEmail || '').trim();
+  const isInviteLink = Boolean(knownEmail);
+  const emailLocked = isInviteLink;
+  const nameLocked = Boolean(resolvedGuestName);
+
+  const defaultGuestFields = useCallback(
+    () => ({
+      guest_name: resolvedGuestName,
+      guest_email: knownEmail,
+    }),
+    [resolvedGuestName, knownEmail]
+  );
 
   useEffect(() => {
     fetchItems();
   }, [eventId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const applyGuestPrefill = (name: string) => {
+      const fields = { guest_name: name, guest_email: knownEmail };
+      setClaimFormData(fields);
+      setFormData((prev) => ({ ...prev, ...fields }));
+    };
+
+    if (!knownEmail) {
+      setResolvedGuestName('');
+      const empty = emptyGuestFields();
+      setClaimFormData(empty);
+      setFormData((prev) => ({ ...prev, ...empty }));
+      return;
+    }
+
+    setGuestLookupLoading(true);
+    applyGuestPrefill('');
+    findGuestByEmail(eventId, knownEmail).then((guest) => {
+      if (cancelled) return;
+      const name = guest?.name?.trim() || '';
+      setResolvedGuestName(name);
+      applyGuestPrefill(name);
+    }).finally(() => {
+      if (!cancelled) setGuestLookupLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, knownEmail]);
 
   const fetchItems = async () => {
     try {
@@ -43,18 +98,31 @@ const PotluckItems = ({ eventId }: PotluckItemsProps) => {
     }
   };
 
+  const guestContactPayload = () => ({
+    guest_name: (nameLocked ? resolvedGuestName : formData.guest_name).trim(),
+    guest_email: (emailLocked ? knownEmail : formData.guest_email).trim(),
+  });
+
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
+    const contact = guestContactPayload();
+    if (!contact.guest_name) {
+      toast.error('Please enter your name');
+      return;
+    }
+    if (!contact.guest_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.guest_email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
     setSubmitting(true);
 
     try {
-      await api.post(`/potluck/event/${eventId}/items`, formData);
+      await api.post(`/potluck/event/${eventId}/items`, { ...formData, ...contact });
       toast.success('Item added to potluck!');
       setShowAddModal(false);
       setFormData({
         item_name: '',
-        guest_name: '',
-        guest_email: '',
+        ...defaultGuestFields(),
         quantity: 1,
         category: '',
         notes: ''
@@ -93,17 +161,27 @@ const PotluckItems = ({ eventId }: PotluckItemsProps) => {
     e.preventDefault();
     if (!selectedItem) return;
 
+    const contact = {
+      guest_name: (nameLocked ? resolvedGuestName : claimFormData.guest_name).trim(),
+      guest_email: (emailLocked ? knownEmail : claimFormData.guest_email).trim(),
+    };
+    if (!contact.guest_name) {
+      toast.error('Please enter your name');
+      return;
+    }
+    if (!contact.guest_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.guest_email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await api.post(`/potluck/items/${selectedItem.id}/claim`, claimFormData);
+      await api.post(`/potluck/items/${selectedItem.id}/claim`, contact);
       toast.success('Item claimed successfully!');
       setShowClaimModal(false);
       setSelectedItem(null);
-      setClaimFormData({
-        guest_name: '',
-        guest_email: ''
-      });
+      setClaimFormData(defaultGuestFields());
       fetchItems();
     } catch (error: unknown) {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
@@ -116,7 +194,19 @@ const PotluckItems = ({ eventId }: PotluckItemsProps) => {
 
   const openClaimModal = (item: PotluckItem) => {
     setSelectedItem(item);
+    setClaimFormData(defaultGuestFields());
     setShowClaimModal(true);
+  };
+
+  const openAddModal = () => {
+    setFormData({
+      item_name: '',
+      ...defaultGuestFields(),
+      quantity: 1,
+      category: '',
+      notes: '',
+    });
+    setShowAddModal(true);
   };
 
 
@@ -136,7 +226,8 @@ const PotluckItems = ({ eventId }: PotluckItemsProps) => {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-900">🍽️ Potluck Sign-Up</h2>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAddModal}
+          disabled={guestLookupLoading && isInviteLink}
           className="btn btn-primary text-sm"
         >
           + Bring Something
@@ -278,38 +369,59 @@ const PotluckItems = ({ eventId }: PotluckItemsProps) => {
                 />
               </div>
 
-              <div>
-                <label htmlFor="guest_name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Your Name *
-                </label>
-                <input
-                  id="guest_name"
-                  type="text"
-                  required
-                  className="input"
-                  placeholder="e.g., Sarah Johnson"
-                  value={formData.guest_name}
-                  onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
-                />
-              </div>
+              {nameLocked ? (
+                <div>
+                  <span className="block text-sm font-medium text-gray-700 mb-1">Your Name</span>
+                  <p className="text-sm text-gray-900 py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    {resolvedGuestName}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="guest_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name *
+                  </label>
+                  <input
+                    id="guest_name"
+                    type="text"
+                    required
+                    className="input"
+                    placeholder="e.g., Sarah Johnson"
+                    value={formData.guest_name}
+                    onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
+                  />
+                </div>
+              )}
 
-              <div>
-                <label htmlFor="guest_email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Your Email *
-                </label>
-                <input
-                  id="guest_email"
-                  type="email"
-                  required
-                  className="input"
-                  placeholder="e.g., sarah@example.com"
-                  value={formData.guest_email}
-                  onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  We'll use this to let you remove your item later
-                </p>
-              </div>
+              {emailLocked ? (
+                <div>
+                  <span className="block text-sm font-medium text-gray-700 mb-1">Your Email</span>
+                  <p className="text-sm text-gray-900 py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    {knownEmail}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    From your invitation link
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="guest_email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Email *
+                  </label>
+                  <input
+                    id="guest_email"
+                    type="email"
+                    required
+                    className="input"
+                    placeholder="e.g., sarah@example.com"
+                    value={formData.guest_email}
+                    onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    We'll use this to let you remove your item later
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
@@ -411,38 +523,59 @@ const PotluckItems = ({ eventId }: PotluckItemsProps) => {
             </div>
 
             <form onSubmit={handleClaimItem} className="space-y-4">
-              <div>
-                <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Your Name *
-                </label>
-                <input
-                  id="claim_guest_name"
-                  type="text"
-                  required
-                  className="input"
-                  placeholder="e.g., Sarah Johnson"
-                  value={claimFormData.guest_name}
-                  onChange={(e) => setClaimFormData({ ...claimFormData, guest_name: e.target.value })}
-                />
-              </div>
+              {nameLocked ? (
+                <div>
+                  <span className="block text-sm font-medium text-gray-700 mb-1">Your Name</span>
+                  <p className="text-sm text-gray-900 py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    {resolvedGuestName}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name *
+                  </label>
+                  <input
+                    id="claim_guest_name"
+                    type="text"
+                    required
+                    className="input"
+                    placeholder="e.g., Sarah Johnson"
+                    value={claimFormData.guest_name}
+                    onChange={(e) => setClaimFormData({ ...claimFormData, guest_name: e.target.value })}
+                  />
+                </div>
+              )}
 
-              <div>
-                <label htmlFor="claim_guest_email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Your Email *
-                </label>
-                <input
-                  id="claim_guest_email"
-                  type="email"
-                  required
-                  className="input"
-                  placeholder="e.g., sarah@example.com"
-                  value={claimFormData.guest_email}
-                  onChange={(e) => setClaimFormData({ ...claimFormData, guest_email: e.target.value })}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  We'll use this to let you remove your item later
-                </p>
-              </div>
+              {emailLocked ? (
+                <div>
+                  <span className="block text-sm font-medium text-gray-700 mb-1">Your Email</span>
+                  <p className="text-sm text-gray-900 py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    {knownEmail}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    From your invitation link
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="claim_guest_email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Email *
+                  </label>
+                  <input
+                    id="claim_guest_email"
+                    type="email"
+                    required
+                    className="input"
+                    placeholder="e.g., sarah@example.com"
+                    value={claimFormData.guest_email}
+                    onChange={(e) => setClaimFormData({ ...claimFormData, guest_email: e.target.value })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    We'll use this to let you remove your item later
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button

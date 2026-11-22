@@ -411,7 +411,9 @@ const EventPage = () => {
 
             {event.show_guest_list && <AttendingGuests eventSlug={event.slug} refreshTrigger={guestListRefreshTrigger} />}
 
-            {event.potluck_enabled && <PotluckItems eventId={event.id} />}
+            {event.potluck_enabled && (
+              <PotluckItems eventId={event.id} guestEmail={guestEmail} />
+            )}
             {event.potluck_enabled === undefined && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
                 Debug: potluck_enabled is undefined

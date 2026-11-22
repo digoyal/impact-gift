@@ -3,6 +3,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import type { Guest } from '../types';
 import { isAxiosError } from '../utils/errors';
+import { findGuestByEmail } from '../utils/findGuestByEmail';
 
 interface RSVPSectionProps {
   guestEmail?: string | null;
@@ -41,8 +42,7 @@ const RSVPSection = ({
     if (!guestEmail) return;
     try {
       setLoading(true);
-      const response = await api.get(`/guests/find-by-email/${eventId}/${encodeURIComponent(guestEmail)}`);
-      const matchedGuest = response.data as Guest;
+      const matchedGuest = await findGuestByEmail(eventId, guestEmail);
 
       if (matchedGuest) {
         setGuest(matchedGuest);
@@ -52,8 +52,8 @@ const RSVPSection = ({
           setAdditionalGuests(matchedGuest.additional_guests || 0);
         }
       }
-    } catch (error: unknown) {
-      // Guest not found is fine in guest mode - they'll create a new record
+    } catch {
+      // Guest not found is fine — they can self-RSVP
     } finally {
       setLoading(false);
     }
