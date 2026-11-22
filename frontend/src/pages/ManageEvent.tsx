@@ -111,6 +111,7 @@ const ManageEvent = () => {
     rsvp_deadline: '',
     dress_code: '',
     show_guest_list: false,
+    allow_additional_guests: true,
     potluck_enabled: false
   });
   const [eventImage, setEventImage] = useState<{ url: string; publicId: string }>({ url: '', publicId: '' });
@@ -252,6 +253,7 @@ const ManageEvent = () => {
         rsvp_deadline: eventRes.data.rsvp_deadline ? eventRes.data.rsvp_deadline.split('T')[0] : '',
         dress_code: eventRes.data.dress_code || '',
         show_guest_list: eventRes.data.show_guest_list || false,
+        allow_additional_guests: eventRes.data.allow_additional_guests !== false,
         potluck_enabled: eventRes.data.potluck_enabled || false
       });
 
@@ -1134,6 +1136,10 @@ const ManageEvent = () => {
           showGuestList={formData.show_guest_list}
           onShowGuestListChange={(value) =>
             setFormData({ ...formData, show_guest_list: value })
+          }
+          allowAdditionalGuests={formData.allow_additional_guests}
+          onAllowAdditionalGuestsChange={(value) =>
+            setFormData({ ...formData, allow_additional_guests: value })
           }
           onSave={handleSaveDetails}
           saveLoading={saveLoading}

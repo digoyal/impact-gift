@@ -394,6 +394,7 @@ const EventPage = () => {
               <RSVPSection
                 guestEmail={guestEmail}
                 eventId={event.id}
+                allowAdditionalGuests={event.allow_additional_guests !== false}
                 onRSVPSubmit={() => {
                   setGuestListRefreshTrigger(prev => prev + 1);
                 }}

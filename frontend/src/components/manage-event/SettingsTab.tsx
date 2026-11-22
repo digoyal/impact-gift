@@ -3,6 +3,8 @@ import { FormEvent } from 'react';
 interface SettingsTabProps {
   showGuestList: boolean;
   onShowGuestListChange: (value: boolean) => void;
+  allowAdditionalGuests: boolean;
+  onAllowAdditionalGuestsChange: (value: boolean) => void;
   onSave: (e: FormEvent) => void;
   saveLoading: boolean;
 }
@@ -10,6 +12,8 @@ interface SettingsTabProps {
 const SettingsTab = ({
   showGuestList,
   onShowGuestListChange,
+  allowAdditionalGuests,
+  onAllowAdditionalGuestsChange,
   onSave,
   saveLoading,
 }: SettingsTabProps) => {
@@ -28,6 +32,18 @@ const SettingsTab = ({
             />
             <span className="ml-3 text-sm font-medium text-gray-700">
               Show guest list publicly on event page
+            </span>
+          </label>
+
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={allowAdditionalGuests}
+              onChange={(e) => onAllowAdditionalGuestsChange(e.target.checked)}
+              className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <span className="ml-3 text-sm font-medium text-gray-700">
+              May bring additional guests
             </span>
           </label>
         </div>

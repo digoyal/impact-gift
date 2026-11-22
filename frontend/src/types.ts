@@ -53,6 +53,7 @@ export interface Event {
   slug: string;
   is_active: boolean;
   show_guest_list?: boolean;
+  allow_additional_guests?: boolean;
   potluck_enabled?: boolean;
   impact_gift_enabled?: boolean;
   template_id?: number;

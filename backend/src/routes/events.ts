@@ -508,6 +508,7 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
       goal_amount,
       is_active,
       show_guest_list,
+      allow_additional_guests,
       dress_code,
       charity_ids,
       potluck_enabled,
@@ -544,13 +545,14 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
            goal_amount = COALESCE($7, goal_amount),
            is_active = COALESCE($8, is_active),
            show_guest_list = COALESCE($9, show_guest_list),
-           dress_code = COALESCE($10, dress_code),
-           potluck_enabled = COALESCE($11, potluck_enabled),
-           impact_gift_enabled = COALESCE($12, impact_gift_enabled),
+           allow_additional_guests = COALESCE($10, allow_additional_guests),
+           dress_code = COALESCE($11, dress_code),
+           potluck_enabled = COALESCE($12, potluck_enabled),
+           impact_gift_enabled = COALESCE($13, impact_gift_enabled),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $13
+       WHERE id = $14
        RETURNING *`,
-      [title, description, event_date, event_type, start_date, end_date, goal_amount, is_active, show_guest_list, dress_code, potluck_enabled, impact_gift_enabled, event.id]
+      [title, description, event_date, event_type, start_date, end_date, goal_amount, is_active, show_guest_list, allow_additional_guests, dress_code, potluck_enabled, impact_gift_enabled, event.id]
     );
 
     // If charity_ids provided, update charity association

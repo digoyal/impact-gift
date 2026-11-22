@@ -7,6 +7,24 @@ import { isOwnerOrCoHost } from '../utils/coHostHelpers';
 
 const router = Router();
 
+async function clampAdditionalGuestsForEvent(
+  eventId: number,
+  additionalGuests: number | undefined | null
+): Promise<number> {
+  const eventResult = await query(
+    'SELECT allow_additional_guests FROM events WHERE id = $1',
+    [eventId]
+  );
+  if (eventResult.rows.length === 0) {
+    return 0;
+  }
+  const allowAdditional = eventResult.rows[0].allow_additional_guests !== false;
+  if (!allowAdditional) {
+    return 0;
+  }
+  return additionalGuests ?? 0;
+}
+
 // Get all invitations for the current user (by email)
 router.get('/my-invitations', authenticate, async (req: AuthRequest, res: Response) => {
   try {
@@ -431,14 +449,19 @@ router.post(
       const { guestId } = req.params;
       const { rsvp_status, rsvp_comment, additional_guests } = req.body;
 
-      console.log(`RSVP submission - Guest ID: ${guestId}, Status: ${rsvp_status}, Additional Guests: ${additional_guests || 0}`);
-
       // Check if guest exists
       const guestCheck = await query('SELECT * FROM guests WHERE id = $1', [guestId]);
       if (guestCheck.rows.length === 0) {
         console.error(`Guest not found: ${guestId}`);
         return res.status(404).json({ error: 'Guest not found' });
       }
+
+      const resolvedAdditionalGuests = await clampAdditionalGuestsForEvent(
+        guestCheck.rows[0].event_id,
+        additional_guests
+      );
+
+      console.log(`RSVP submission - Guest ID: ${guestId}, Status: ${rsvp_status}, Additional Guests: ${resolvedAdditionalGuests}`);
 
       // Update RSVP
       const result = await query(
@@ -450,10 +473,10 @@ router.post(
              updated_at = CURRENT_TIMESTAMP
          WHERE id = $4
          RETURNING *`,
-        [rsvp_status, rsvp_comment || null, additional_guests || 0, guestId]
+        [rsvp_status, rsvp_comment || null, resolvedAdditionalGuests, guestId]
       );
 
-      console.log(`✅ Guest ${guestId} RSVP'd: ${rsvp_status} with ${additional_guests || 0} additional guest(s)`);
+      console.log(`✅ Guest ${guestId} RSVP'd: ${rsvp_status} with ${resolvedAdditionalGuests} additional guest(s)`);
       res.json(result.rows[0]);
     } catch (error: unknown) {
       console.error('Error submitting RSVP:', error);
@@ -486,6 +509,8 @@ router.post(
 
       const { event_id, name, email, rsvp_status, rsvp_comment, additional_guests } = req.body;
 
+      const resolvedAdditionalGuests = await clampAdditionalGuestsForEvent(event_id, additional_guests);
+
       // Verify event exists
       const eventCheck = await query('SELECT id, is_active FROM events WHERE id = $1', [event_id]);
       if (eventCheck.rows.length === 0) {
@@ -515,7 +540,7 @@ router.post(
                updated_at = CURRENT_TIMESTAMP
            WHERE id = $5
            RETURNING *`,
-          [name, rsvp_status, rsvp_comment || null, additional_guests || 0, existingGuest.rows[0].id]
+          [name, rsvp_status, rsvp_comment || null, resolvedAdditionalGuests, existingGuest.rows[0].id]
         );
       } else {
         // Insert new guest
@@ -523,7 +548,7 @@ router.post(
           `INSERT INTO guests (event_id, email, name, rsvp_status, rsvp_comment, additional_guests, rsvp_at)
            VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
            RETURNING *`,
-          [event_id, email, name, rsvp_status, rsvp_comment || null, additional_guests || 0]
+          [event_id, email, name, rsvp_status, rsvp_comment || null, resolvedAdditionalGuests]
         );
       }
 

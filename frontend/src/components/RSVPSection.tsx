@@ -7,10 +7,16 @@ import { isAxiosError } from '../utils/errors';
 interface RSVPSectionProps {
   guestEmail?: string | null;
   eventId: number;
+  allowAdditionalGuests?: boolean;
   onRSVPSubmit?: () => void;
 }
 
-const RSVPSection = ({ guestEmail, eventId, onRSVPSubmit }: RSVPSectionProps) => {
+const RSVPSection = ({
+  guestEmail,
+  eventId,
+  allowAdditionalGuests = true,
+  onRSVPSubmit,
+}: RSVPSectionProps) => {
   const [guest, setGuest] = useState<Guest | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +76,11 @@ const RSVPSection = ({ guestEmail, eventId, onRSVPSubmit }: RSVPSectionProps) =>
 
     setSubmitting(true);
 
+    const additionalGuestsToSubmit =
+      allowAdditionalGuests && (rsvpStatus === 'attending' || rsvpStatus === 'maybe')
+        ? additionalGuests
+        : 0;
+
     const submitWithRetry = async (retryCount = 0): Promise<void> => {
       try {
         if (isGuestMode || !guest) {
@@ -80,7 +91,7 @@ const RSVPSection = ({ guestEmail, eventId, onRSVPSubmit }: RSVPSectionProps) =>
             email: guestEmailInput.trim(),
             rsvp_status: rsvpStatus,
             rsvp_comment: rsvpComment || undefined,
-            additional_guests: additionalGuests
+            additional_guests: additionalGuestsToSubmit
           }, { timeout: 15000 });
 
           setGuest(response.data);
@@ -89,7 +100,7 @@ const RSVPSection = ({ guestEmail, eventId, onRSVPSubmit }: RSVPSectionProps) =>
           await api.post(`/guests/${guest.id}/rsvp`, {
             rsvp_status: rsvpStatus,
             rsvp_comment: rsvpComment || undefined,
-            additional_guests: additionalGuests
+            additional_guests: additionalGuestsToSubmit
           }, { timeout: 15000 });
 
           fetchGuestInfo();
@@ -253,7 +264,7 @@ const RSVPSection = ({ guestEmail, eventId, onRSVPSubmit }: RSVPSectionProps) =>
             </div>
           </div>
 
-          {(rsvpStatus === 'attending' || rsvpStatus === 'maybe') && (
+          {allowAdditionalGuests && (rsvpStatus === 'attending' || rsvpStatus === 'maybe') && (
             <div>
               <label htmlFor="additional_guests" className="block text-sm font-medium text-gray-700 mb-1">
                 Bringing additional guests?
