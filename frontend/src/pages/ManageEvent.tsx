@@ -12,6 +12,7 @@ import RSVPSummaryBar from '../components/manage-event/RSVPSummaryBar';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import ProgressTab from '../components/manage-event/ProgressTab';
 import GuestsTab from '../components/manage-event/GuestsTab';
+import SettingsTab from '../components/manage-event/SettingsTab';
 import EventImageSelector from '../components/EventImageSelector';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { toastEmailSendError, toastEmailSendResult } from '../utils/emailSendFeedback';
@@ -42,7 +43,8 @@ const ManageEvent = () => {
     | 'guests'
     | 'progress'
     | 'cohosts'
-    | 'communication';
+    | 'communication'
+    | 'settings';
   // Set initial tab from location state or default to 'details' (legacy 'rsvp' → guests)
   const stateTab = (location.state as { tab?: string })?.tab;
   const initialTab: TabType =
@@ -845,6 +847,7 @@ const ManageEvent = () => {
     'charities',
     'communication',
     'cohosts',
+    'settings',
     'progress',
   ];
 
@@ -856,6 +859,7 @@ const ManageEvent = () => {
     guests: 'Guests',
     communication: 'Send Message',
     cohosts: 'Co-hosts',
+    settings: 'Settings',
     progress: 'Progress & Donations',
   };
 
@@ -1140,28 +1144,6 @@ const ManageEvent = () => {
 
             </div>
 
-            {/* Settings */}
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Settings</h3>
-
-              <div className="space-y-4">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.show_guest_list}
-                    onChange={(e) => setFormData({ ...formData, show_guest_list: e.target.checked })}
-                    className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <span className="ml-3 text-sm font-medium text-gray-700">
-                    Show guest list publicly on event page
-                  </span>
-                </label>
-                <p className="text-xs text-gray-500 ml-8">
-                  When enabled, guests who RSVP'd as "Attending" will be visible to everyone viewing your event page
-                </p>
-              </div>
-            </div>
-
             {/* Save Button */}
             <div className="flex gap-3 pt-4">
               <button
@@ -1173,25 +1155,20 @@ const ManageEvent = () => {
               </button>
             </div>
           </form>
-
-          {/* Danger Zone */}
-          {!event?.cancelled && (
-            <div className="mt-8 p-6 bg-red-50 border-2 border-red-200 rounded-lg">
-              <h3 className="text-lg font-semibold text-red-900 mb-2">Danger Zone</h3>
-              <p className="text-sm text-red-700 mb-4">
-                Once you cancel this event, all invited guests will be notified and the event will be marked as cancelled.
-                This action cannot be undone.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowCancelModal(true)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-              >
-                ⚠️ Cancel Event
-              </button>
-            </div>
-          )}
         </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <SettingsTab
+          event={event}
+          showGuestList={formData.show_guest_list}
+          onShowGuestListChange={(value) =>
+            setFormData({ ...formData, show_guest_list: value })
+          }
+          onSave={handleSaveDetails}
+          saveLoading={saveLoading}
+          onShowCancelModal={() => setShowCancelModal(true)}
+        />
       )}
 
       {activeTab === 'dresscode' && (
