@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import api from '../utils/api';
@@ -139,15 +139,10 @@ function DashboardTimingPills({
     onChange(next);
   };
 
-  const pillClass = (active: boolean) =>
-    `px-4 py-2 rounded-full text-sm font-medium transition-all ${
-      active
-        ? 'bg-primary-600 text-white shadow-md'
-        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-    }`;
+  const pillClass = (active: boolean) => dashboardPillButtonClass(active);
 
   return (
-    <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Filter events by timing">
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Filter events by timing">
       <button
         type="button"
         onClick={() => toggle('current')}
@@ -206,6 +201,19 @@ const dashboardTabLabels: Record<DashboardTab, string> = {
   invitations: 'My Invitations',
 };
 
+const dashboardTabHelperText: Record<DashboardTab, string> = {
+  events: "Events you're hosting",
+  invitations: "Events you've been invited to",
+};
+
+function dashboardPillButtonClass(active: boolean) {
+  return `px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+    active
+      ? 'bg-primary-600 text-white shadow-md'
+      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+  }`;
+}
+
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
@@ -228,6 +236,10 @@ const Dashboard = () => {
     () => invitations.filter((inv) => matchesEventTimingFilter(inv.event_date, timingFilter)),
     [invitations, timingFilter]
   );
+
+  const showTimingFilters =
+    (activeTab === 'events' && !eventsLoading && !eventsError && events.length > 0) ||
+    (activeTab === 'invitations' && !invitationsLoading && invitations.length > 0);
 
   useEffect(() => {
     // Wait for auth to finish loading before fetching data
@@ -363,43 +375,36 @@ const Dashboard = () => {
           <p className="text-body-large text-neutral-600">Your events and invitations</p>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-neutral-200 mb-8 -mx-4 sm:mx-0">
-          <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
-            <nav className="-mb-px flex flex-wrap items-center gap-x-0.5 sm:gap-x-1">
-              {dashboardTabs.map((tab, index) => (
-                <Fragment key={tab}>
-                  {index > 0 && (
-                    <span
-                      className="text-neutral-300 text-sm leading-none select-none px-0.5"
-                      aria-hidden="true"
-                    >
-                      ·
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab(tab)}
-                    className={`py-2.5 px-1 sm:px-1.5 border-b-2 font-medium text-sm whitespace-nowrap ${
-                      activeTab === tab
-                        ? 'border-primary-600 text-primary-600'
-                        : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-                    }`}
-                  >
-                    {dashboardTabLabels[tab]}
-                  </button>
-                </Fragment>
-              ))}
-            </nav>
-          </div>
+        <div className="mb-6 flex gap-2" role="tablist" aria-label="Dashboard sections">
+          {dashboardTabs.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 min-w-0 ${dashboardPillButtonClass(activeTab === tab)}`}
+            >
+              {dashboardTabLabels[tab]}
+            </button>
+          ))}
+          <Link
+            to="/create-event"
+            className={`flex-1 min-w-0 text-center ${dashboardPillButtonClass(false)}`}
+          >
+            Create Event
+          </Link>
         </div>
+
+        {showTimingFilters && (
+          <div className="mb-6">
+            <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
+            <p className="text-sm text-neutral-600 mt-2">{dashboardTabHelperText[activeTab]}</p>
+          </div>
+        )}
 
         {activeTab === 'invitations' && (
         <div className="mb-16">
-          <div className="mb-8">
-            <p className="text-body-large text-neutral-600">Events you've been invited to</p>
-          </div>
-
           {invitationsLoading ? (
             <div className="flex flex-col gap-4 max-w-3xl">
               {[1, 2].map((i) => (
@@ -416,7 +421,6 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
               {filteredInvitations.length === 0 ? (
                 <DashboardFilteredEmptyState />
               ) : (
@@ -443,18 +447,6 @@ const Dashboard = () => {
 
         {activeTab === 'events' && (
         <div className="mb-16">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <p className="text-body-large text-neutral-600">Events you're hosting</p>
-            </div>
-            <Link to="/create-event" className="btn btn-primary">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create Event
-            </Link>
-          </div>
-
           {eventsLoading ? (
             <div className="flex flex-col gap-4 max-w-3xl">
               {[1, 2, 3].map((i) => (
@@ -501,7 +493,6 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
               {filteredEvents.length === 0 ? (
                 <DashboardFilteredEmptyState />
               ) : (
