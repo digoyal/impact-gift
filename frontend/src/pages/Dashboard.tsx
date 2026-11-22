@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import api from '../utils/api';
@@ -373,19 +373,38 @@ const Dashboard = () => {
           <p className="text-body-large text-neutral-600">Your events and invitations</p>
         </div>
 
-        <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Dashboard sections">
-          {dashboardTabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab}
-              onClick={() => setActiveTab(tab)}
-              className={dashboardPillButtonClass(activeTab === tab)}
-            >
-              {dashboardTabLabels[tab]}
-            </button>
-          ))}
+        <div className="border-b border-neutral-200 mb-6">
+          <nav
+            className="-mb-px flex flex-wrap items-center gap-x-0.5 sm:gap-x-1"
+            role="tablist"
+            aria-label="Dashboard sections"
+          >
+            {dashboardTabs.map((tab, index) => (
+              <Fragment key={tab}>
+                {index > 0 && (
+                  <span
+                    className="text-neutral-300 text-sm leading-none select-none px-0.5"
+                    aria-hidden="true"
+                  >
+                    ·
+                  </span>
+                )}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`py-2.5 px-1 sm:px-1.5 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    activeTab === tab
+                      ? 'border-primary-600 text-primary-600'
+                      : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
+                  }`}
+                >
+                  {dashboardTabLabels[tab]}
+                </button>
+              </Fragment>
+            ))}
+          </nav>
         </div>
 
         {showTimingFilters && (
