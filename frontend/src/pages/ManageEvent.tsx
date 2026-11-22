@@ -8,7 +8,6 @@ import { EventPhoto } from '../components/EventPhotosUploader';
 import DressCodeTab from '../components/manage-event/DressCodeTab';
 import ImpactGiftTab from '../components/manage-event/ImpactGiftTab';
 import CoHostsTab from '../components/manage-event/CoHostsTab';
-import RSVPTab from '../components/manage-event/RSVPTab';
 import RSVPSummaryBar from '../components/manage-event/RSVPSummaryBar';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import ProgressTab from '../components/manage-event/ProgressTab';
@@ -43,10 +42,11 @@ const ManageEvent = () => {
     | 'guests'
     | 'progress'
     | 'cohosts'
-    | 'rsvp'
     | 'communication';
-  // Set initial tab from location state or default to 'details'
-  const initialTab = (location.state as { tab?: TabType })?.tab || 'details';
+  // Set initial tab from location state or default to 'details' (legacy 'rsvp' → guests)
+  const stateTab = (location.state as { tab?: string })?.tab;
+  const initialTab: TabType =
+    stateTab === 'rsvp' ? 'guests' : ((stateTab as TabType | undefined) || 'details');
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   // Guard against missing slug
@@ -843,7 +843,6 @@ const ManageEvent = () => {
     'dresscode',
     'potluck',
     'charities',
-    'rsvp',
     'communication',
     'cohosts',
     'progress',
@@ -855,7 +854,6 @@ const ManageEvent = () => {
     potluck: 'Potluck',
     charities: 'Impact Gift',
     guests: 'Guests',
-    rsvp: 'RSVP Summary',
     communication: 'Message Guests',
     cohosts: 'Co-hosts',
     progress: 'Progress & Donations',
@@ -1251,9 +1249,6 @@ const ManageEvent = () => {
           additionalGuestsSavingId={additionalGuestsSavingId}
         />
       )}
-
-      {/* RSVP Summary Tab */}
-      {activeTab === 'rsvp' && <RSVPTab />}
 
       {/* Communication Tab */}
       {activeTab === 'communication' && (
