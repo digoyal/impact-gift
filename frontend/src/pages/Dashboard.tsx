@@ -29,7 +29,7 @@ interface Invitation {
   event_image_url?: string;
 }
 
-type DashboardTab = 'events' | 'invitations';
+type DashboardTab = 'events' | 'invitations' | 'pledges';
 
 const dashboardCardActionBtn =
   'btn btn-sm w-full !min-h-0 !py-1.5 px-3 text-xs font-medium whitespace-nowrap';
@@ -295,16 +295,18 @@ function DashboardEventCardSkeleton() {
   );
 }
 
-const dashboardTabs: DashboardTab[] = ['events', 'invitations'];
+const dashboardTabs: DashboardTab[] = ['events', 'invitations', 'pledges'];
 
 const dashboardTabLabels: Record<DashboardTab, string> = {
   events: 'My Events',
   invitations: 'My Invitations',
+  pledges: 'Donation Pledges',
 };
 
 const dashboardTabHelperText: Record<DashboardTab, string> = {
   events: "Events you're hosting",
   invitations: "Events you've been invited to",
+  pledges: 'Summary of pledges you made and received',
 };
 
 function dashboardPillButtonClass(active: boolean) {
@@ -597,7 +599,7 @@ const Dashboard = () => {
                   aria-selected={activeTab === tab}
                   onClick={() => {
                     setActiveTab(tab);
-                    if (tab === 'invitations') {
+                    if (tab === 'invitations' || tab === 'pledges') {
                       setSelectedEventId(null);
                     }
                   }}
@@ -767,8 +769,8 @@ const Dashboard = () => {
         </div>
         )}
 
-        {/* Quick Stats - Commitments Summary */}
-        <div className="mb-12 animate-fade-in" style={{ animationDelay: '100ms' }}>
+        {activeTab === 'pledges' && (
+        <div className="mb-16 animate-fade-in" style={{ animationDelay: '100ms' }}>
           <div className="card">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -823,6 +825,7 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+        )}
 
         {/* Favorite Charities Section */}
         <div className="animate-fade-in" style={{ animationDelay: '150ms' }}>
