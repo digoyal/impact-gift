@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Guest } from '../../types';
 import { isOrganizerGuest } from '../../utils/eventOrganizerGuest';
 import AdditionalGuestsControl from './AdditionalGuestsControl';
@@ -22,21 +23,13 @@ function GuestStatusInline({ guest, organizer }: { guest: Guest; organizer: bool
     : 'bg-amber-50 text-amber-900';
 
   return (
-    <div
-      className="inline-flex max-w-full items-center gap-1.5 whitespace-nowrap text-xs"
-      title={guest.rsvp_comment || undefined}
-    >
+    <div className="inline-flex max-w-full items-center gap-1.5 whitespace-nowrap text-xs">
       <span className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 font-medium leading-none ${rsvp.className}`}>
         {rsvp.text}
       </span>
       {!organizer && (
         <span className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 font-medium leading-none ${inviteClass}`}>
           {guest.invitation_sent ? 'Invited' : 'Pending'}
-        </span>
-      )}
-      {guest.rsvp_comment && (
-        <span className="min-w-0 truncate text-neutral-500 italic" title={guest.rsvp_comment}>
-          &ldquo;{guest.rsvp_comment}&rdquo;
         </span>
       )}
     </div>
@@ -173,71 +166,87 @@ const GuestListTable = ({
                 );
               }
 
+              const comment = guest.rsvp_comment?.trim();
+              const tailColSpan = impactGiftOn ? 4 : 3;
+
               return (
-                <tr key={guest.id} className={organizer ? 'bg-neutral-50' : undefined}>
-                  <td className="px-4 py-3 text-sm whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <span>{guest.name || '—'}</span>
-                      {organizer && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-primary-100 text-primary-800">Host</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-neutral-700 whitespace-nowrap max-w-[200px] truncate" title={guest.email}>
-                    {guest.email}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <GuestStatusInline guest={guest} organizer={organizer} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <AdditionalGuestsControl
-                      displayMode="partySize"
-                      value={guest.additional_guests ?? 0}
-                      disabled={!allowAdditionalGuests}
-                      saving={additionalGuestsSavingId === guest.id}
-                      onChange={(next) => onUpdateAdditionalGuests(guest.id, next)}
-                    />
-                  </td>
-                  {impactGiftOn && (
+                <Fragment key={guest.id}>
+                  <tr className={organizer ? 'bg-neutral-50' : undefined}>
                     <td className="px-4 py-3 text-sm whitespace-nowrap">
-                      {guest.has_donated ? (
-                        <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
+                      <div className="flex items-center gap-2">
+                        <span>{guest.name || '—'}</span>
+                        {organizer && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-primary-100 text-primary-800">Host</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-neutral-700 whitespace-nowrap max-w-[200px] truncate" title={guest.email}>
+                      {guest.email}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <GuestStatusInline guest={guest} organizer={organizer} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <AdditionalGuestsControl
+                        displayMode="partySize"
+                        value={guest.additional_guests ?? 0}
+                        disabled={!allowAdditionalGuests}
+                        saving={additionalGuestsSavingId === guest.id}
+                        onChange={(next) => onUpdateAdditionalGuests(guest.id, next)}
+                      />
+                    </td>
+                    {impactGiftOn && (
+                      <td className="px-4 py-3 text-sm whitespace-nowrap">
+                        {guest.has_donated ? (
+                          <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                    )}
+                    <td className="px-4 py-3 text-right text-sm whitespace-nowrap space-x-2">
+                      {!organizer && guest.invitation_sent && (
+                        <button
+                          type="button"
+                          onClick={() => onResendInvitation(guest.id)}
+                          className="text-primary-600 hover:text-primary-800"
+                          title="Resend invitation"
+                        >
+                          Resend
+                        </button>
+                      )}
+                      {!organizer && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => onStartEdit(guest)}
+                            className="text-primary-600 hover:text-primary-800"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onRemoveGuest(guest.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            Remove
+                          </button>
+                        </>
                       )}
                     </td>
-                  )}
-                  <td className="px-4 py-3 text-right text-sm whitespace-nowrap space-x-2">
-                    {!organizer && guest.invitation_sent && (
-                      <button
-                        type="button"
-                        onClick={() => onResendInvitation(guest.id)}
-                        className="text-primary-600 hover:text-primary-800"
-                        title="Resend invitation"
+                  </tr>
+                  {comment && (
+                    <tr className={organizer ? 'bg-neutral-50' : undefined}>
+                      <td
+                        colSpan={2}
+                        className="px-4 pt-0 pb-2.5 text-xs text-neutral-500 italic whitespace-normal leading-snug"
                       >
-                        Resend
-                      </button>
-                    )}
-                    {!organizer && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => onStartEdit(guest)}
-                          className="text-primary-600 hover:text-primary-800"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onRemoveGuest(guest.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Remove
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
+                        &ldquo;{comment}&rdquo;
+                      </td>
+                      <td colSpan={tailColSpan} className="p-0" />
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>
