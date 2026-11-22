@@ -772,18 +772,7 @@ const Dashboard = () => {
         {activeTab === 'pledges' && (
         <div className="mb-16 animate-fade-in" style={{ animationDelay: '100ms' }}>
           <div className="card">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary-100 p-3 rounded-xl">
-                  <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-heading-3 text-neutral-900">My Commitments</h2>
-                  <p className="text-caption">Donation pledges summary</p>
-                </div>
-              </div>
+            <div className="flex items-center justify-end mb-6">
               <Link to="/commitments" className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1">
                 View All
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
