@@ -184,11 +184,11 @@ const EventPage = () => {
       )}
 
       <div className="relative bg-white border-b border-neutral-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 relative z-10">
-          <div className="mb-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
+          <div className="mb-3">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <h1 className="text-display text-neutral-900 mb-3">
+                <h1 className="text-heading-2 text-neutral-900 mb-1">
                   {event.title}
                 </h1>
                 {event.cancelled && (
