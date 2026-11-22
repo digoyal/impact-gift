@@ -98,7 +98,7 @@ const GuestListTable = ({
       <p className="text-gray-500 text-center py-8">{emptyMessage}</p>
     ) : (
       <div className="overflow-x-auto -mx-2 sm:mx-0">
-        <table className="min-w-[720px] w-full divide-y divide-gray-200">
+        <table className="min-w-[720px] w-full border-collapse">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Name</th>
@@ -111,14 +111,14 @@ const GuestListTable = ({
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white">
             {guests.map((guest) => {
               const organizer = isOrganizerGuest(guest, ownerEmail);
               const isEditing = editingGuestId === guest.id;
 
               if (isEditing) {
                 return (
-                  <tr key={guest.id} className="bg-primary-50">
+                  <tr key={guest.id} className="bg-primary-50 border-b border-gray-200">
                     <td className="px-4 py-3">
                       <input
                         type="text"
@@ -250,8 +250,12 @@ const GuestListTable = ({
                 </td>
               );
 
+              const dataRowClass = [rowClass, comment ? undefined : 'border-b border-gray-200']
+                .filter(Boolean)
+                .join(' ');
+
               const dataRow = (
-                <tr className={rowClass}>
+                <tr className={dataRowClass || undefined}>
                   {nameCell}
                   {emailCell}
                   {statusCell}
@@ -265,9 +269,7 @@ const GuestListTable = ({
                 return (
                   <Fragment key={guest.id}>
                     {dataRow}
-                    <tr
-                      className={[rowClass, 'border-b border-gray-200'].filter(Boolean).join(' ')}
-                    >
+                    <tr className={[rowClass, 'border-b border-gray-200 border-t-0'].filter(Boolean).join(' ')}>
                       <td colSpan={columnCount} className="px-4 pt-1 pb-2.5 align-top">
                         <p className="text-xs text-neutral-500 italic whitespace-normal leading-snug">
                           &ldquo;{comment}&rdquo;
@@ -279,7 +281,7 @@ const GuestListTable = ({
               }
 
               return (
-                <tr key={guest.id} className={rowClass}>
+                <tr key={guest.id} className={dataRowClass || undefined}>
                   {nameCell}
                   {emailCell}
                   {statusCell}
