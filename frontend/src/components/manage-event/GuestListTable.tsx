@@ -261,8 +261,8 @@ const GuestListTable = ({
                       {donatedCell(2)}
                       {actionsCell(2)}
                     </tr>
-                    <tr className={rowClass}>
-                      <td colSpan={2} className="px-4 pt-0 pb-3 border-t border-gray-200 align-top">
+                    <tr className={[rowClass, 'border-b border-gray-200'].filter(Boolean).join(' ')}>
+                      <td colSpan={2} className="px-4 pt-1 pb-2.5 align-top">
                         <p className="text-xs text-neutral-500 italic whitespace-normal leading-snug">
                           &ldquo;{comment}&rdquo;
                         </p>
