@@ -261,20 +261,8 @@ const EventPage = () => {
 
             {/* Event Details Card */}
             {(event.start_time || event.end_time || event.venue_name || event.address || event.host_name || event.host_phone || event.rsvp_deadline) && (
-              <div className="card">
-                <div className="flex justify-end mb-4">
-                  <a
-                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/calendar/event/${event.slug}`}
-                    download
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Add to Calendar
-                  </a>
-                </div>
-                <div className="space-y-6">
+              <div className="card !p-4 sm:!p-5">
+                <div className="space-y-4">
                   {/* Date and Time */}
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
@@ -282,17 +270,29 @@ const EventPage = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-heading-4 text-neutral-900 mb-1">Date & Time</h3>
-                      <p className="text-body text-neutral-700">
-                        {format(parseLocalDate(event.event_date), 'EEEE, MMMM dd, yyyy')}
-                      </p>
-                      {event.start_time && (
-                        <p className="text-caption">
-                          {formatTime(event.start_time)}
-                          {event.end_time && ` - ${formatTime(event.end_time)}`}
+                    <div className="flex-1 min-w-0 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                      <div className="min-w-0">
+                        <h3 className="text-heading-4 text-neutral-900 mb-1">Date & Time</h3>
+                        <p className="text-body text-neutral-700">
+                          {format(parseLocalDate(event.event_date), 'EEEE, MMMM dd, yyyy')}
                         </p>
-                      )}
+                        {event.start_time && (
+                          <p className="text-caption">
+                            {formatTime(event.start_time)}
+                            {event.end_time && ` - ${formatTime(event.end_time)}`}
+                          </p>
+                        )}
+                      </div>
+                      <a
+                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/calendar/event/${event.slug}`}
+                        download
+                        className="btn btn-secondary btn-sm shrink-0"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Add to Calendar
+                      </a>
                     </div>
                   </div>
 
