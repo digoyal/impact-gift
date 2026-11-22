@@ -18,6 +18,25 @@ function rsvpBadge(guest: Guest): { text: string; className: string } {
 
 type GuestSortKey = 'name' | 'email' | 'status';
 type GuestSortDir = 'asc' | 'desc';
+type GuestStatusFilter = 'all' | Guest['rsvp_status'];
+
+const GUEST_STATUS_FILTER_OPTIONS: { value: GuestStatusFilter; label: string }[] = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'attending', label: 'Attending' },
+  { value: 'not_attending', label: 'Declined' },
+  { value: 'maybe', label: 'Maybe' },
+  { value: 'no_response', label: 'No reply' },
+];
+
+function guestMatchesStatusFilter(
+  guest: Guest,
+  filter: GuestStatusFilter,
+  ownerEmail: string | null
+): boolean {
+  if (filter === 'all') return true;
+  if (isOrganizerGuest(guest, ownerEmail)) return true;
+  return guest.rsvp_status === filter;
+}
 
 const RSVP_STATUS_SORT_ORDER: Record<Guest['rsvp_status'], number> = {
   attending: 0,
@@ -137,6 +156,7 @@ const GuestListTable = ({
 }: GuestListTableProps) => {
   const [sortKey, setSortKey] = useState<GuestSortKey | null>(null);
   const [sortDir, setSortDir] = useState<GuestSortDir>('asc');
+  const [statusFilter, setStatusFilter] = useState<GuestStatusFilter>('all');
 
   const handleSort = (column: GuestSortKey) => {
     if (sortKey !== column) {
@@ -152,10 +172,15 @@ const GuestListTable = ({
     setSortDir('asc');
   };
 
-  const sortedGuests = useMemo(() => {
-    if (!sortKey) return guests;
+  const filteredGuests = useMemo(
+    () => guests.filter((guest) => guestMatchesStatusFilter(guest, statusFilter, ownerEmail)),
+    [guests, statusFilter, ownerEmail]
+  );
 
-    const next = [...guests];
+  const sortedGuests = useMemo(() => {
+    if (!sortKey) return filteredGuests;
+
+    const next = [...filteredGuests];
     next.sort((a, b) => {
       const aHost = isOrganizerGuest(a, ownerEmail);
       const bHost = isOrganizerGuest(b, ownerEmail);
@@ -175,12 +200,32 @@ const GuestListTable = ({
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return next;
-  }, [guests, sortKey, sortDir, ownerEmail]);
+  }, [filteredGuests, sortKey, sortDir, ownerEmail]);
 
   return (
   <div className="card">
     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <h3 className="text-lg font-semibold">Guests ({guests.length})</h3>
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <h3 className="text-lg font-semibold shrink-0">
+          Guests (
+          {statusFilter === 'all' ? guests.length : `${filteredGuests.length} of ${guests.length}`})
+        </h3>
+        <label htmlFor="guest-status-filter" className="sr-only">
+          Filter by RSVP status
+        </label>
+        <select
+          id="guest-status-filter"
+          className="input !min-h-0 h-9 py-1.5 pl-2 pr-8 text-sm w-auto max-w-[10.5rem] shrink-0"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as GuestStatusFilter)}
+        >
+          {GUEST_STATUS_FILTER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
       {pendingInvites > 0 && onSendInvitations && (
         <button type="button" onClick={onSendInvitations} className="btn btn-primary">
           Send {pendingInvites} Pending Invitation{pendingInvites !== 1 ? 's' : ''}
@@ -190,6 +235,8 @@ const GuestListTable = ({
 
     {guests.length === 0 ? (
       <p className="text-gray-500 text-center py-8">{emptyMessage}</p>
+    ) : sortedGuests.length === 0 ? (
+      <p className="text-gray-500 text-center py-8">No guests match this status filter.</p>
     ) : (
       <div className="overflow-x-auto -mx-2 sm:mx-0">
         <table className="min-w-[720px] w-full border-collapse">
