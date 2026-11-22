@@ -197,7 +197,7 @@ function DashboardEventCard({
 
 type EventTimingFilter = 'current' | 'past';
 
-const defaultTimingFilters = (): Set<EventTimingFilter> => new Set(['current', 'past']);
+const defaultTimingFilters = (): Set<EventTimingFilter> => new Set(['current']);
 
 function matchesEventTimingFilter(
   eventDate: string,
