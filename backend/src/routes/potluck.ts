@@ -5,6 +5,10 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+function isYourOwnSuggestedItemName(itemName: string): boolean {
+  return itemName.trim().toLowerCase() === 'your own';
+}
+
 // Get potluck items for an event (public)
 router.get('/event/:eventId', async (req: Request, res: Response) => {
   try {
@@ -188,7 +192,8 @@ router.post(
   '/items/:itemId/claim',
   [
     body('guest_name').trim().notEmpty().withMessage('Guest name required'),
-    body('guest_email').isEmail().withMessage('Valid email required')
+    body('guest_email').isEmail().withMessage('Valid email required'),
+    body('bringing_description').optional().trim(),
   ],
   async (req: Request, res: Response) => {
     try {
@@ -198,11 +203,11 @@ router.post(
       }
 
       const { itemId } = req.params;
-      const { guest_name, guest_email } = req.body;
+      const { guest_name, guest_email, bringing_description } = req.body;
 
       // Check if item exists and is unclaimed
       const itemCheck = await query(
-        `SELECT id, is_suggested, guest_email FROM potluck_items WHERE id = $1`,
+        `SELECT id, is_suggested, guest_email, item_name FROM potluck_items WHERE id = $1`,
         [itemId]
       );
 
@@ -220,14 +225,33 @@ router.post(
         return res.status(400).json({ error: 'This item has already been claimed' });
       }
 
+      const isYourOwn = isYourOwnSuggestedItemName(item.item_name || '');
+      let itemNameUpdate: string | null = null;
+
+      if (isYourOwn) {
+        const description = (bringing_description || '').trim();
+        if (!description) {
+          return res.status(400).json({ error: 'bringing_description is required for Your Own items' });
+        }
+        itemNameUpdate = `Your Own: ${description}`;
+      }
+
       // Claim the item
-      const result = await query(
-        `UPDATE potluck_items
-         SET guest_name = $1, guest_email = $2, claimed_at = CURRENT_TIMESTAMP
-         WHERE id = $3
-         RETURNING *`,
-        [guest_name, guest_email, itemId]
-      );
+      const result = itemNameUpdate
+        ? await query(
+            `UPDATE potluck_items
+             SET guest_name = $1, guest_email = $2, item_name = $3, claimed_at = CURRENT_TIMESTAMP
+             WHERE id = $4
+             RETURNING *`,
+            [guest_name, guest_email, itemNameUpdate, itemId]
+          )
+        : await query(
+            `UPDATE potluck_items
+             SET guest_name = $1, guest_email = $2, claimed_at = CURRENT_TIMESTAMP
+             WHERE id = $3
+             RETURNING *`,
+            [guest_name, guest_email, itemId]
+          );
 
       res.json(result.rows[0]);
     } catch (error) {

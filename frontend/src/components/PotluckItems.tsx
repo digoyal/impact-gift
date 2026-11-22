@@ -15,6 +15,10 @@ const emptyGuestFields = () => ({
   guest_email: '',
 });
 
+function isYourOwnSuggestedItem(itemName: string): boolean {
+  return itemName.trim().toLowerCase() === 'your own';
+}
+
 const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
   const [items, setItems] = useState<PotluckItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +35,9 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
   });
   const [claimFormData, setClaimFormData] = useState({
     guest_name: '',
-    guest_email: ''
+    guest_email: '',
   });
+  const [claimBringingDescription, setClaimBringingDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [guestLookupLoading, setGuestLookupLoading] = useState(false);
   const [resolvedGuestName, setResolvedGuestName] = useState('');
@@ -174,13 +179,24 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
       return;
     }
 
+    const claimYourOwn = isYourOwnSuggestedItem(selectedItem.item_name);
+    const bringingDescription = claimBringingDescription.trim();
+    if (claimYourOwn && !bringingDescription) {
+      toast.error('Please describe what you are bringing');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await api.post(`/potluck/items/${selectedItem.id}/claim`, contact);
+      await api.post(`/potluck/items/${selectedItem.id}/claim`, {
+        ...contact,
+        ...(claimYourOwn ? { bringing_description: bringingDescription } : {}),
+      });
       toast.success('Item claimed successfully!');
       setShowClaimModal(false);
       setSelectedItem(null);
+      setClaimBringingDescription('');
       setClaimFormData(defaultGuestFields());
       fetchItems();
     } catch (error: unknown) {
@@ -194,6 +210,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
 
   const openClaimModal = (item: PotluckItem) => {
     setSelectedItem(item);
+    setClaimBringingDescription('');
     setClaimFormData(defaultGuestFields());
     setShowClaimModal(true);
   };
@@ -505,6 +522,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                 onClick={() => {
                   setShowClaimModal(false);
                   setSelectedItem(null);
+                  setClaimBringingDescription('');
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -523,6 +541,23 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
             </div>
 
             <form onSubmit={handleClaimItem} className="space-y-4">
+              {selectedItem && isYourOwnSuggestedItem(selectedItem.item_name) && (
+                <div>
+                  <label htmlFor="claim_bringing_description" className="block text-sm font-medium text-gray-700 mb-1">
+                    What are you bringing? *
+                  </label>
+                  <input
+                    id="claim_bringing_description"
+                    type="text"
+                    required
+                    className="input"
+                    placeholder="e.g., Homemade guacamole"
+                    value={claimBringingDescription}
+                    onChange={(e) => setClaimBringingDescription(e.target.value)}
+                  />
+                </div>
+              )}
+
               {nameLocked ? (
                 <div>
                   <span className="block text-sm font-medium text-gray-700 mb-1">Your Name</span>
@@ -590,6 +625,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                   onClick={() => {
                     setShowClaimModal(false);
                     setSelectedItem(null);
+                    setClaimBringingDescription('');
                   }}
                   className="btn btn-secondary"
                 >
