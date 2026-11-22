@@ -88,11 +88,6 @@ const ManageEvent = () => {
   const [pendingCommitments, setPendingCommitments] = useState(0);
   const [sendingReminders, setSendingReminders] = useState(false);
 
-  // Cancel event state
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancellationReason, setCancellationReason] = useState('');
-  const [cancelling, setCancelling] = useState(false);
-
   // Master guest list state
   const [showMasterListModal, setShowMasterListModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
@@ -333,30 +328,6 @@ const ManageEvent = () => {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
       const errorMsg = data?.error as string || 'Failed to duplicate event';
       toast.error(errorMsg);
-    }
-  };
-
-  const cancelEvent = async () => {
-    if (!event) return;
-
-    setCancelling(true);
-    try {
-      const response = await api.post(`/events/${event.id}/cancel`, {
-        cancellation_reason: cancellationReason || undefined
-      });
-
-      toast.success(`Event cancelled. ${response.data.notified_guests} guest(s) notified.`);
-      setShowCancelModal(false);
-      setCancellationReason('');
-
-      // Refresh event data to show cancelled status
-      await fetchEventData();
-    } catch (error: unknown) {
-      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = data?.error as string || 'Failed to cancel event';
-      toast.error(errorMsg);
-    } finally {
-      setCancelling(false);
     }
   };
 
@@ -1160,14 +1131,12 @@ const ManageEvent = () => {
 
       {activeTab === 'settings' && (
         <SettingsTab
-          event={event}
           showGuestList={formData.show_guest_list}
           onShowGuestListChange={(value) =>
             setFormData({ ...formData, show_guest_list: value })
           }
           onSave={handleSaveDetails}
           saveLoading={saveLoading}
-          onShowCancelModal={() => setShowCancelModal(true)}
         />
       )}
 
@@ -1454,62 +1423,6 @@ const ManageEvent = () => {
             Choose charities on the Impact Gift tab to track donations and send reminders.
           </div>
         )
-      )}
-
-      {/* Cancel Event Modal */}
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">Cancel Event</h2>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-800">
-                  <strong>⚠️ Warning:</strong> This action cannot be undone. All invited guests will be notified
-                  that the event has been cancelled.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for cancellation (optional)
-                </label>
-                <textarea
-                  value={cancellationReason}
-                  onChange={(e) => setCancellationReason(e.target.value)}
-                  placeholder="Let your guests know why you're cancelling..."
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
-                  rows={4}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  This message will be included in the cancellation email sent to all guests.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-200 flex gap-3">
-              <button
-                onClick={() => {
-                  setShowCancelModal(false);
-                  setCancellationReason('');
-                }}
-                disabled={cancelling}
-                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Keep Event
-              </button>
-              <button
-                onClick={cancelEvent}
-                disabled={cancelling}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {cancelling ? 'Cancelling...' : 'Cancel Event'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Paste Email List Modal */}

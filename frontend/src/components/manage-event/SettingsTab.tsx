@@ -1,22 +1,17 @@
 import { FormEvent } from 'react';
-import { Event } from '../../types';
 
 interface SettingsTabProps {
-  event: Event;
   showGuestList: boolean;
   onShowGuestListChange: (value: boolean) => void;
   onSave: (e: FormEvent) => void;
   saveLoading: boolean;
-  onShowCancelModal: () => void;
 }
 
 const SettingsTab = ({
-  event,
   showGuestList,
   onShowGuestListChange,
   onSave,
   saveLoading,
-  onShowCancelModal,
 }: SettingsTabProps) => {
   return (
     <div className="card">
@@ -46,23 +41,6 @@ const SettingsTab = ({
           </button>
         </div>
       </form>
-
-      {!event?.cancelled && (
-        <div className="mt-8 p-6 bg-red-50 border-2 border-red-200 rounded-lg">
-          <h3 className="text-lg font-semibold text-red-900 mb-2">Danger Zone</h3>
-          <p className="text-sm text-red-700 mb-4">
-            Once you cancel this event, all invited guests will be notified and the event will be marked as cancelled.
-            This action cannot be undone.
-          </p>
-          <button
-            type="button"
-            onClick={onShowCancelModal}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-          >
-            ⚠️ Cancel Event
-          </button>
-        </div>
-      )}
     </div>
   );
 };
