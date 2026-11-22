@@ -81,8 +81,9 @@ export function formatEventTimeWithZone(timeString: string | undefined, eventDat
   return zone ? `${formatted} ${zone}` : formatted;
 }
 
-/** Whether the calendar date is before today (local). */
-export function isEventDatePast(eventDate: string): boolean {
+/** Whether the event is in the past (local date) or cancelled. */
+export function isEventDatePast(eventDate: string, cancelled?: boolean): boolean {
+  if (cancelled === true) return true;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const eventDay = parseLocalDate(eventDate);

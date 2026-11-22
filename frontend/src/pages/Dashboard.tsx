@@ -54,7 +54,7 @@ function DashboardEventCard({
   animationDelay = 0,
   badgeExtra,
 }: DashboardEventCardProps) {
-  const timingLabel = isEventDatePast(eventDate) ? 'Past' : 'Upcoming';
+  const timingLabel = isEventDatePast(eventDate, cancelled) ? 'Past' : 'Upcoming';
   const dateLine = format(parseLocalDate(eventDate), 'EEE MMM d, yyyy');
   const timeLine = startTime ? formatEventTimeWithZone(startTime, eventDate) : '';
 
@@ -116,9 +116,13 @@ type EventTimingFilter = 'current' | 'past';
 
 const defaultTimingFilters = (): Set<EventTimingFilter> => new Set(['current', 'past']);
 
-function matchesEventTimingFilter(eventDate: string, selected: Set<EventTimingFilter>): boolean {
+function matchesEventTimingFilter(
+  eventDate: string,
+  selected: Set<EventTimingFilter>,
+  cancelled?: boolean
+): boolean {
   if (selected.size === 0) return false;
-  const past = isEventDatePast(eventDate);
+  const past = isEventDatePast(eventDate, cancelled);
   return (past && selected.has('past')) || (!past && selected.has('current'));
 }
 
@@ -226,12 +230,12 @@ const Dashboard = () => {
   const [timingFilter, setTimingFilter] = useState<Set<EventTimingFilter>>(defaultTimingFilters);
 
   const filteredEvents = useMemo(
-    () => events.filter((event) => matchesEventTimingFilter(event.event_date, timingFilter)),
+    () => events.filter((event) => matchesEventTimingFilter(event.event_date, timingFilter, event.cancelled)),
     [events, timingFilter]
   );
 
   const filteredInvitations = useMemo(
-    () => invitations.filter((inv) => matchesEventTimingFilter(inv.event_date, timingFilter)),
+    () => invitations.filter((inv) => matchesEventTimingFilter(inv.event_date, timingFilter, inv.cancelled)),
     [invitations, timingFilter]
   );
 
