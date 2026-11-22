@@ -835,7 +835,7 @@ const ManageEvent = () => {
     potluck: 'Potluck',
     charities: 'Impact Gift',
     guests: 'Guests',
-    communication: 'Send Message',
+    communication: 'Message',
     cohosts: 'Co-hosts',
     settings: 'Settings',
   };
