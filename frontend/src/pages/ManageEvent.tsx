@@ -854,7 +854,7 @@ const ManageEvent = () => {
     potluck: 'Potluck',
     charities: 'Impact Gift',
     guests: 'Guests',
-    communication: 'Message Guests',
+    communication: 'Send Message',
     cohosts: 'Co-hosts',
     progress: 'Progress & Donations',
   };
@@ -1254,7 +1254,7 @@ const ManageEvent = () => {
       {activeTab === 'communication' && (
         <div className="space-y-6">
           <div className="card">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Message Guests</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Send Message</h3>
 
             {/* Message Form */}
             <div className="space-y-4">
