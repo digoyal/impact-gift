@@ -142,22 +142,21 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
     }
   };
 
-  const handleRemoveItem = async (itemId: number, guestEmail: string) => {
-    const email = prompt('Please enter your email to confirm removal:');
-    if (!email) return;
+  const canUnclaimAsCurrentGuest = (itemGuestEmail: string | null | undefined) => {
+    if (!knownEmail || !itemGuestEmail) return false;
+    return itemGuestEmail.toLowerCase() === knownEmail.toLowerCase();
+  };
 
-    if (email.toLowerCase() !== guestEmail.toLowerCase()) {
-      toast.error('Email does not match. You can only remove your own items.');
-      return;
-    }
+  const handleUnclaimItem = async (itemId: number) => {
+    if (!knownEmail) return;
 
     try {
-      await api.delete(`/potluck/items/${itemId}`, { data: { email } });
-      toast.success('Item removed from potluck');
+      await api.post(`/potluck/items/${itemId}/unclaim`, { guest_email: knownEmail });
+      toast.success('Unclaimed successfully');
       fetchItems();
     } catch (error: unknown) {
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = (data?.error as string) || 'Failed to remove item';
+      const errorMsg = (data?.error as string) || 'Failed to unclaim item';
       toast.error(errorMsg);
     }
   };
@@ -340,13 +339,13 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                       </p>
                     )}
                   </div>
-                  {item.guest_email && (
+                  {canUnclaimAsCurrentGuest(item.guest_email) && (
                     <button
-                      onClick={() => handleRemoveItem(item.id, item.guest_email!)}
-                      className="text-red-600 hover:text-red-700 text-sm"
-                      title="Remove item"
+                      type="button"
+                      onClick={() => handleUnclaimItem(item.id)}
+                      className="text-sm text-primary-700 hover:text-primary-800 font-medium whitespace-nowrap"
                     >
-                      ✕
+                      Unclaim
                     </button>
                   )}
                 </div>
@@ -435,7 +434,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                     onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    We'll use this to let you remove your item later
+                    We'll use this to verify you can unclaim later
                   </p>
                 </div>
               )}
@@ -607,7 +606,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                     onChange={(e) => setClaimFormData({ ...claimFormData, guest_email: e.target.value })}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    We'll use this to let you remove your item later
+                    We'll use this to verify you can unclaim later
                   </p>
                 </div>
               )}

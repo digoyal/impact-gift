@@ -94,39 +94,75 @@ router.post(
   }
 );
 
-// Remove potluck item (public - by email match)
-router.delete('/items/:itemId', async (req: Request, res: Response) => {
-  try {
-    const { itemId } = req.params;
-    const { email } = req.body;
+// Unclaim / withdraw own potluck signup (public — no row delete for suggested items)
+router.post(
+  '/items/:itemId/unclaim',
+  [body('guest_email').isEmail().withMessage('Valid email required')],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email required to remove item' });
+      const { itemId } = req.params;
+      const { guest_email } = req.body;
+
+      const itemCheck = await query(
+        `SELECT id, is_suggested, guest_email, item_name FROM potluck_items WHERE id = $1`,
+        [itemId]
+      );
+
+      if (itemCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      const item = itemCheck.rows[0];
+
+      if (!item.guest_email) {
+        return res.status(400).json({ error: 'This item is not claimed' });
+      }
+
+      if (item.guest_email.toLowerCase() !== guest_email.toLowerCase()) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      if (item.is_suggested) {
+        const result = await query(
+          `UPDATE potluck_items
+           SET guest_name = NULL,
+               guest_email = NULL,
+               claimed_at = NULL,
+               item_name = CASE
+                 WHEN item_name ~* '^Your Own\\s*:'
+                 THEN 'Your Own'
+                 ELSE item_name
+               END
+           WHERE id = $1
+           RETURNING *`,
+          [itemId]
+        );
+        return res.json(result.rows[0]);
+      }
+
+      const deleted = await query(
+        `DELETE FROM potluck_items
+         WHERE id = $1 AND is_suggested = false AND LOWER(guest_email) = LOWER($2)
+         RETURNING id`,
+        [itemId, guest_email]
+      );
+
+      if (deleted.rows.length === 0) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      res.json({ message: 'Signup withdrawn', id: Number(itemId) });
+    } catch (error) {
+      console.error('Error unclaiming potluck item:', error);
+      res.status(500).json({ error: 'Server error' });
     }
-
-    // Verify email matches
-    const itemCheck = await query(
-      'SELECT guest_email FROM potluck_items WHERE id = $1',
-      [itemId]
-    );
-
-    if (itemCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Item not found' });
-    }
-
-    if (itemCheck.rows[0].guest_email.toLowerCase() !== email.toLowerCase()) {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
-    // Remove item
-    await query('DELETE FROM potluck_items WHERE id = $1', [itemId]);
-
-    res.json({ message: 'Item removed' });
-  } catch (error) {
-    console.error('Error removing potluck item:', error);
-    res.status(500).json({ error: 'Server error' });
   }
-});
+);
 
 // Add suggested item (authenticated - host only)
 router.post(
