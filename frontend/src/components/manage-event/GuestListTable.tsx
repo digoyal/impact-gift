@@ -168,6 +168,7 @@ const GuestListTable = ({
 
               const comment = guest.rsvp_comment?.trim();
               const rowClass = organizer ? 'bg-neutral-50' : undefined;
+              const columnCount = impactGiftOn ? 6 : 5;
 
               const nameCell = (
                 <td className="px-4 py-3 align-top text-sm whitespace-nowrap">
@@ -188,14 +189,14 @@ const GuestListTable = ({
                 </td>
               );
 
-              const statusCell = (rowSpan?: number) => (
-                <td rowSpan={rowSpan} className="px-4 py-3 align-top whitespace-nowrap">
+              const statusCell = (
+                <td className="px-4 py-3 align-top whitespace-nowrap">
                   <GuestStatusInline guest={guest} organizer={organizer} />
                 </td>
               );
 
-              const numGuestsCell = (rowSpan?: number) => (
-                <td rowSpan={rowSpan} className="px-4 py-3 align-top">
+              const numGuestsCell = (
+                <td className="px-4 py-3 align-top">
                   <AdditionalGuestsControl
                     displayMode="partySize"
                     value={guest.additional_guests ?? 0}
@@ -206,19 +207,18 @@ const GuestListTable = ({
                 </td>
               );
 
-              const donatedCell = (rowSpan?: number) =>
-                impactGiftOn ? (
-                  <td rowSpan={rowSpan} className="px-4 py-3 align-top text-sm whitespace-nowrap">
-                    {guest.has_donated ? (
-                      <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                ) : null;
+              const donatedCell = impactGiftOn ? (
+                <td className="px-4 py-3 align-top text-sm whitespace-nowrap">
+                  {guest.has_donated ? (
+                    <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+              ) : null;
 
-              const actionsCell = (rowSpan?: number) => (
-                <td rowSpan={rowSpan} className="px-4 py-3 align-top text-right text-sm whitespace-nowrap space-x-2">
+              const actionsCell = (
+                <td className="px-4 py-3 align-top text-right text-sm whitespace-nowrap space-x-2">
                   {!organizer && guest.invitation_sent && (
                     <button
                       type="button"
@@ -250,19 +250,25 @@ const GuestListTable = ({
                 </td>
               );
 
+              const dataRow = (
+                <tr className={rowClass}>
+                  {nameCell}
+                  {emailCell}
+                  {statusCell}
+                  {numGuestsCell}
+                  {donatedCell}
+                  {actionsCell}
+                </tr>
+              );
+
               if (comment) {
                 return (
                   <Fragment key={guest.id}>
-                    <tr className={rowClass}>
-                      {nameCell}
-                      {emailCell}
-                      {statusCell(2)}
-                      {numGuestsCell(2)}
-                      {donatedCell(2)}
-                      {actionsCell(2)}
-                    </tr>
-                    <tr className={[rowClass, 'border-b border-gray-200'].filter(Boolean).join(' ')}>
-                      <td colSpan={2} className="px-4 pt-1 pb-2.5 align-top">
+                    {dataRow}
+                    <tr
+                      className={[rowClass, 'border-b border-gray-200'].filter(Boolean).join(' ')}
+                    >
+                      <td colSpan={columnCount} className="px-4 pt-1 pb-2.5 align-top">
                         <p className="text-xs text-neutral-500 italic whitespace-normal leading-snug">
                           &ldquo;{comment}&rdquo;
                         </p>
@@ -276,10 +282,10 @@ const GuestListTable = ({
                 <tr key={guest.id} className={rowClass}>
                   {nameCell}
                   {emailCell}
-                  {statusCell()}
-                  {numGuestsCell()}
-                  {donatedCell()}
-                  {actionsCell()}
+                  {statusCell}
+                  {numGuestsCell}
+                  {donatedCell}
+                  {actionsCell}
                 </tr>
               );
             })}
