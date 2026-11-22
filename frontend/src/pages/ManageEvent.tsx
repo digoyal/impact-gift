@@ -10,7 +10,6 @@ import ImpactGiftTab from '../components/manage-event/ImpactGiftTab';
 import CoHostsTab from '../components/manage-event/CoHostsTab';
 import RSVPSummaryBar from '../components/manage-event/RSVPSummaryBar';
 import PotluckTab from '../components/manage-event/PotluckTab';
-import ProgressTab from '../components/manage-event/ProgressTab';
 import GuestsTab from '../components/manage-event/GuestsTab';
 import SettingsTab from '../components/manage-event/SettingsTab';
 import EventImageSelector from '../components/EventImageSelector';
@@ -41,14 +40,14 @@ const ManageEvent = () => {
     | 'potluck'
     | 'charities'
     | 'guests'
-    | 'progress'
     | 'cohosts'
     | 'communication'
     | 'settings';
   // Set initial tab from location state or default to 'details' (legacy 'rsvp' → guests)
   const stateTab = (location.state as { tab?: string })?.tab;
-  const initialTab: TabType =
-    stateTab === 'rsvp' ? 'guests' : ((stateTab as TabType | undefined) || 'details');
+  const resolvedStateTab =
+    stateTab === 'rsvp' ? 'guests' : stateTab === 'progress' ? 'charities' : stateTab;
+  const initialTab: TabType = (resolvedStateTab as TabType | undefined) || 'details';
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   // Guard against missing slug
@@ -800,7 +799,6 @@ const ManageEvent = () => {
     'communication',
     'cohosts',
     'settings',
-    'progress',
   ];
 
   const manageTabLabels: Record<TabType, string> = {
@@ -812,7 +810,6 @@ const ManageEvent = () => {
     communication: 'Send Message',
     cohosts: 'Co-hosts',
     settings: 'Settings',
-    progress: 'Progress & Donations',
   };
 
   return (
@@ -1129,12 +1126,18 @@ const ManageEvent = () => {
 
       {activeTab === 'charities' && (
         <ImpactGiftTab
+          event={event}
           charities={charities}
           selectedCharityIds={selectedCharityIds}
           onToggleCharity={toggleCharity}
           onSave={handleSaveImpactGift}
           saveLoading={saveLoading}
           onCharitiesRefresh={setCharities}
+          donations={donations}
+          pendingCommitments={pendingCommitments}
+          sendingReminders={sendingReminders}
+          onSendReminders={sendDonationReminders}
+          showDonationProgress={impactGiftOn}
         />
       )}
 
@@ -1383,23 +1386,6 @@ const ManageEvent = () => {
       {activeTab === 'potluck' && <PotluckTab event={event} />}
 
       {activeTab === 'cohosts' && <CoHostsTab eventId={event.id} />}
-
-      {/* Progress Tab */}
-      {activeTab === 'progress' && (
-        impactGiftOn ? (
-          <ProgressTab
-            event={event}
-            donations={donations}
-            pendingCommitments={pendingCommitments}
-            sendingReminders={sendingReminders}
-            onSendReminders={sendDonationReminders}
-          />
-        ) : (
-          <div className="card text-sm text-gray-600">
-            Choose charities on the Impact Gift tab to track donations and send reminders.
-          </div>
-        )
-      )}
 
       {/* Paste Email List Modal */}
       {showBulkImportModal && (
