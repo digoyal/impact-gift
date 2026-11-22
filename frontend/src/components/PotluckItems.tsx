@@ -38,7 +38,11 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
     guest_email: '',
   });
   const [claimBringingDescription, setClaimBringingDescription] = useState('');
+  const [claimModalVariant, setClaimModalVariant] = useState<'full' | 'your-own' | 'name-only' | null>(
+    null
+  );
   const [submitting, setSubmitting] = useState(false);
+  const [claimingItemId, setClaimingItemId] = useState<number | null>(null);
   const [guestLookupLoading, setGuestLookupLoading] = useState(false);
   const [resolvedGuestName, setResolvedGuestName] = useState('');
 
@@ -161,57 +165,124 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
     }
   };
 
+  const closeClaimModal = () => {
+    setShowClaimModal(false);
+    setSelectedItem(null);
+    setClaimBringingDescription('');
+    setClaimModalVariant(null);
+  };
+
+  const claimContactFromForm = () => ({
+    guest_name: (nameLocked ? resolvedGuestName : claimFormData.guest_name).trim(),
+    guest_email: (emailLocked ? knownEmail : claimFormData.guest_email).trim(),
+  });
+
+  const executeClaim = async (
+    item: PotluckItem,
+    contact: { guest_name: string; guest_email: string },
+    bringingDescription?: string
+  ) => {
+    const isYourOwn = isYourOwnSuggestedItem(item.item_name);
+    if (isYourOwn) {
+      const description = (bringingDescription || '').trim();
+      if (!description) {
+        toast.error('Please describe what you are bringing');
+        throw new Error('validation');
+      }
+    }
+
+    if (!contact.guest_name) {
+      toast.error('Please enter your name');
+      throw new Error('validation');
+    }
+    if (!contact.guest_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.guest_email)) {
+      toast.error('Please enter a valid email address');
+      throw new Error('validation');
+    }
+
+    await api.post(`/potluck/items/${item.id}/claim`, {
+      ...contact,
+      ...(isYourOwn ? { bringing_description: bringingDescription!.trim() } : {}),
+    });
+  };
+
+  const quickClaimItem = async (item: PotluckItem) => {
+    setClaimingItemId(item.id);
+    try {
+      await executeClaim(item, {
+        guest_name: resolvedGuestName,
+        guest_email: knownEmail,
+      });
+      toast.success('Item claimed successfully!');
+      fetchItems();
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'validation') return;
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      const errorMsg = (data?.error as string) || 'Failed to claim item';
+      toast.error(errorMsg);
+    } finally {
+      setClaimingItemId(null);
+    }
+  };
+
+  const handleClaimButtonClick = (item: PotluckItem) => {
+    const isYourOwn = isYourOwnSuggestedItem(item.item_name);
+
+    if (!isInviteLink) {
+      setSelectedItem(item);
+      setClaimBringingDescription('');
+      setClaimFormData(emptyGuestFields());
+      setClaimModalVariant('full');
+      setShowClaimModal(true);
+      return;
+    }
+
+    if (guestLookupLoading) return;
+
+    if (isYourOwn) {
+      setSelectedItem(item);
+      setClaimBringingDescription('');
+      setClaimModalVariant('your-own');
+      setShowClaimModal(true);
+      return;
+    }
+
+    if (nameLocked) {
+      void quickClaimItem(item);
+      return;
+    }
+
+    setSelectedItem(item);
+    setClaimBringingDescription('');
+    setClaimFormData({ guest_name: '', guest_email: knownEmail });
+    setClaimModalVariant('name-only');
+    setShowClaimModal(true);
+  };
+
   const handleClaimItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
 
-    const contact = {
-      guest_name: (nameLocked ? resolvedGuestName : claimFormData.guest_name).trim(),
-      guest_email: (emailLocked ? knownEmail : claimFormData.guest_email).trim(),
-    };
-    if (!contact.guest_name) {
-      toast.error('Please enter your name');
-      return;
-    }
-    if (!contact.guest_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.guest_email)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
+    const contact = claimContactFromForm();
     const claimYourOwn = isYourOwnSuggestedItem(selectedItem.item_name);
-    const bringingDescription = claimBringingDescription.trim();
-    if (claimYourOwn && !bringingDescription) {
-      toast.error('Please describe what you are bringing');
-      return;
-    }
+    const bringingDescription = claimYourOwn ? claimBringingDescription : undefined;
 
     setSubmitting(true);
 
     try {
-      await api.post(`/potluck/items/${selectedItem.id}/claim`, {
-        ...contact,
-        ...(claimYourOwn ? { bringing_description: bringingDescription } : {}),
-      });
+      await executeClaim(selectedItem, contact, bringingDescription);
       toast.success('Item claimed successfully!');
-      setShowClaimModal(false);
-      setSelectedItem(null);
-      setClaimBringingDescription('');
+      closeClaimModal();
       setClaimFormData(defaultGuestFields());
       fetchItems();
     } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'validation') return;
       const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
       const errorMsg = (data?.error as string) || 'Failed to claim item';
       toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const openClaimModal = (item: PotluckItem) => {
-    setSelectedItem(item);
-    setClaimBringingDescription('');
-    setClaimFormData(defaultGuestFields());
-    setShowClaimModal(true);
   };
 
   const openAddModal = () => {
@@ -289,10 +360,12 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                     )}
                   </div>
                   <button
-                    onClick={() => openClaimModal(item)}
+                    type="button"
+                    onClick={() => handleClaimButtonClick(item)}
+                    disabled={claimingItemId === item.id || (isInviteLink && guestLookupLoading)}
                     className="btn btn-primary text-sm whitespace-nowrap"
                   >
-                    Claim Item
+                    {claimingItemId === item.id ? 'Claiming...' : 'Claim Item'}
                   </button>
                 </div>
               </div>
@@ -516,13 +589,12 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Claim Item</h3>
+              <h3 className="text-xl font-bold">
+                {claimModalVariant === 'your-own' ? 'What are you bringing?' : 'Claim Item'}
+              </h3>
               <button
-                onClick={() => {
-                  setShowClaimModal(false);
-                  setSelectedItem(null);
-                  setClaimBringingDescription('');
-                }}
+                type="button"
+                onClick={closeClaimModal}
                 className="text-gray-400 hover:text-gray-600"
               >
                 ✕
@@ -540,31 +612,30 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
             </div>
 
             <form onSubmit={handleClaimItem} className="space-y-4">
-              {selectedItem && isYourOwnSuggestedItem(selectedItem.item_name) && (
-                <div>
-                  <label htmlFor="claim_bringing_description" className="block text-sm font-medium text-gray-700 mb-1">
-                    What are you bringing? *
-                  </label>
-                  <input
-                    id="claim_bringing_description"
-                    type="text"
-                    required
-                    className="input"
-                    placeholder="e.g., Homemade guacamole"
-                    value={claimBringingDescription}
-                    onChange={(e) => setClaimBringingDescription(e.target.value)}
-                  />
-                </div>
-              )}
+              {selectedItem &&
+                (claimModalVariant === 'your-own' ||
+                  (claimModalVariant === 'full' && isYourOwnSuggestedItem(selectedItem.item_name))) && (
+                  <div>
+                    <label
+                      htmlFor="claim_bringing_description"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      What are you bringing? *
+                    </label>
+                    <input
+                      id="claim_bringing_description"
+                      type="text"
+                      required
+                      className="input"
+                      placeholder="e.g., Homemade guacamole"
+                      value={claimBringingDescription}
+                      onChange={(e) => setClaimBringingDescription(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                )}
 
-              {nameLocked ? (
-                <div>
-                  <span className="block text-sm font-medium text-gray-700 mb-1">Your Name</span>
-                  <p className="text-sm text-gray-900 py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    {resolvedGuestName}
-                  </p>
-                </div>
-              ) : (
+              {claimModalVariant === 'your-own' && !nameLocked && (
                 <div>
                   <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
                     Your Name *
@@ -581,34 +652,105 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                 </div>
               )}
 
-              {emailLocked ? (
+              {claimModalVariant === 'name-only' && (
                 <div>
-                  <span className="block text-sm font-medium text-gray-700 mb-1">Your Email</span>
-                  <p className="text-sm text-gray-900 py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    {knownEmail}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    From your invitation link
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <label htmlFor="claim_guest_email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Email *
+                  <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name *
                   </label>
                   <input
-                    id="claim_guest_email"
-                    type="email"
+                    id="claim_guest_name"
+                    type="text"
                     required
                     className="input"
-                    placeholder="e.g., sarah@example.com"
-                    value={claimFormData.guest_email}
-                    onChange={(e) => setClaimFormData({ ...claimFormData, guest_email: e.target.value })}
+                    placeholder="e.g., Sarah Johnson"
+                    value={claimFormData.guest_name}
+                    onChange={(e) => setClaimFormData({ ...claimFormData, guest_name: e.target.value })}
+                    autoFocus
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    We'll use this to verify you can unclaim later
-                  </p>
                 </div>
+              )}
+
+              {claimModalVariant === 'full' && (
+                <>
+                  {!isYourOwnSuggestedItem(selectedItem.item_name) && (
+                    <>
+                      <div>
+                        <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
+                          Your Name *
+                        </label>
+                        <input
+                          id="claim_guest_name"
+                          type="text"
+                          required
+                          className="input"
+                          placeholder="e.g., Sarah Johnson"
+                          value={claimFormData.guest_name}
+                          onChange={(e) =>
+                            setClaimFormData({ ...claimFormData, guest_name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="claim_guest_email" className="block text-sm font-medium text-gray-700 mb-1">
+                          Your Email *
+                        </label>
+                        <input
+                          id="claim_guest_email"
+                          type="email"
+                          required
+                          className="input"
+                          placeholder="e.g., sarah@example.com"
+                          value={claimFormData.guest_email}
+                          onChange={(e) =>
+                            setClaimFormData({ ...claimFormData, guest_email: e.target.value })
+                          }
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          We'll use this to verify you can unclaim later
+                        </p>
+                      </div>
+                    </>
+                  )}
+                  {isYourOwnSuggestedItem(selectedItem.item_name) && (
+                    <>
+                      <div>
+                        <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
+                          Your Name *
+                        </label>
+                        <input
+                          id="claim_guest_name"
+                          type="text"
+                          required
+                          className="input"
+                          placeholder="e.g., Sarah Johnson"
+                          value={claimFormData.guest_name}
+                          onChange={(e) =>
+                            setClaimFormData({ ...claimFormData, guest_name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="claim_guest_email" className="block text-sm font-medium text-gray-700 mb-1">
+                          Your Email *
+                        </label>
+                        <input
+                          id="claim_guest_email"
+                          type="email"
+                          required
+                          className="input"
+                          placeholder="e.g., sarah@example.com"
+                          value={claimFormData.guest_email}
+                          onChange={(e) =>
+                            setClaimFormData({ ...claimFormData, guest_email: e.target.value })
+                          }
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          We'll use this to verify you can unclaim later
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </>
               )}
 
               <div className="flex gap-3 pt-4">
@@ -619,15 +761,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                 >
                   {submitting ? 'Claiming...' : 'Claim Item'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowClaimModal(false);
-                    setSelectedItem(null);
-                    setClaimBringingDescription('');
-                  }}
-                  className="btn btn-secondary"
-                >
+                <button type="button" onClick={closeClaimModal} className="btn btn-secondary">
                   Cancel
                 </button>
               </div>
