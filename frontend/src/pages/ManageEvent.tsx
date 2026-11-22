@@ -48,6 +48,26 @@ function SettingsGearIcon({ className }: { className?: string }) {
   );
 }
 
+const MANAGE_EVENT_TAB_IDS = [
+  'details',
+  'cohosts',
+  'guests',
+  'communication',
+  'potluck',
+  'charities',
+  'dresscode',
+  'settings',
+] as const;
+
+type ManageEventTabType = (typeof MANAGE_EVENT_TAB_IDS)[number];
+
+function resolveManageEventTab(tab: string | undefined): ManageEventTabType | undefined {
+  if (!tab) return undefined;
+  if (tab === 'rsvp') return 'guests';
+  if (tab === 'progress') return 'charities';
+  return MANAGE_EVENT_TAB_IDS.includes(tab as ManageEventTabType) ? (tab as ManageEventTabType) : undefined;
+}
+
 const ManageEvent = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -59,20 +79,12 @@ const ManageEvent = () => {
   const [rsvpSummary, setRsvpSummary] = useState<RSVPSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  type TabType =
-    | 'details'
-    | 'dresscode'
-    | 'potluck'
-    | 'charities'
-    | 'guests'
-    | 'cohosts'
-    | 'communication'
-    | 'settings';
-  // Set initial tab from location state or default to 'details' (legacy 'rsvp' → guests)
+  type TabType = ManageEventTabType;
+
+  // Initial tab: ?tab= query, location state, or details (legacy rsvp / progress aliases)
+  const queryTab = new URLSearchParams(location.search).get('tab') ?? undefined;
   const stateTab = (location.state as { tab?: string })?.tab;
-  const resolvedStateTab =
-    stateTab === 'rsvp' ? 'guests' : stateTab === 'progress' ? 'charities' : stateTab;
-  const initialTab: TabType = (resolvedStateTab as TabType | undefined) || 'details';
+  const initialTab: TabType = resolveManageEventTab(queryTab ?? stateTab) ?? 'details';
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   // Guard against missing slug
@@ -815,16 +827,7 @@ const ManageEvent = () => {
   const impactGiftOn = isImpactGiftEnabled(event);
   const showGuestDonatedColumn = eventHasSelectedCharity(event);
 
-  const manageTabs: TabType[] = [
-    'details',
-    'guests',
-    'dresscode',
-    'potluck',
-    'charities',
-    'communication',
-    'cohosts',
-    'settings',
-  ];
+  const manageTabs: TabType[] = [...MANAGE_EVENT_TAB_IDS];
 
   const manageTabLabels: Record<TabType, string> = {
     details: 'Details',
