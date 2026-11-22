@@ -4,6 +4,7 @@ import { query } from '../database/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { AddGuestInput } from '../types';
 import { isOwnerOrCoHost } from '../utils/coHostHelpers';
+import { GUEST_LIST_FORBIDDEN_MESSAGE, isGuestOnList } from '../utils/guestList';
 
 const router = Router();
 
@@ -489,7 +490,7 @@ router.post(
   }
 );
 
-// Guest self-RSVP (public endpoint - creates guest record if not exists and submits RSVP)
+// Guest self-RSVP (public — listed guests only; updates existing row)
 router.post(
   '/rsvp-guest',
   [
@@ -521,39 +522,34 @@ router.post(
         return res.status(400).json({ error: 'This event is no longer accepting RSVPs' });
       }
 
-      // Check if guest already exists for this event
+      const onList = await isGuestOnList(event_id, email);
+      if (!onList) {
+        return res.status(403).json({ error: GUEST_LIST_FORBIDDEN_MESSAGE });
+      }
+
       const existingGuest = await query(
-        'SELECT id FROM guests WHERE event_id = $1 AND LOWER(email) = LOWER($2)',
+        'SELECT id, name FROM guests WHERE event_id = $1 AND LOWER(email) = LOWER($2)',
         [event_id, email]
       );
 
-      let result;
-      if (existingGuest.rows.length > 0) {
-        // Update existing guest
-        result = await query(
-          `UPDATE guests
-           SET name = COALESCE($1, name),
-               rsvp_status = $2,
-               rsvp_comment = $3,
-               additional_guests = $4,
-               rsvp_at = CURRENT_TIMESTAMP,
-               updated_at = CURRENT_TIMESTAMP
-           WHERE id = $5
-           RETURNING *`,
-          [name, rsvp_status, rsvp_comment || null, resolvedAdditionalGuests, existingGuest.rows[0].id]
-        );
-      } else {
-        // Insert new guest
-        result = await query(
-          `INSERT INTO guests (event_id, email, name, rsvp_status, rsvp_comment, additional_guests, rsvp_at)
-           VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
-           RETURNING *`,
-          [event_id, email, name, rsvp_status, rsvp_comment || null, resolvedAdditionalGuests]
-        );
-      }
+      const guestId = existingGuest.rows[0].id;
+      const storedName = existingGuest.rows[0].name;
+
+      const result = await query(
+        `UPDATE guests
+         SET name = COALESCE(NULLIF($1, ''), name),
+             rsvp_status = $2,
+             rsvp_comment = $3,
+             additional_guests = $4,
+             rsvp_at = CURRENT_TIMESTAMP,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $5
+         RETURNING *`,
+        [name?.trim() || storedName, rsvp_status, rsvp_comment || null, resolvedAdditionalGuests, guestId]
+      );
 
       console.log(`Guest self-RSVP: ${email} -> ${rsvp_status} for event ${event_id}`);
-      res.status(201).json(result.rows[0]);
+      res.json(result.rows[0]);
     } catch (error: unknown) {
       console.error('Error in guest self-RSVP:', error.message, error.stack);
       res.status(500).json({

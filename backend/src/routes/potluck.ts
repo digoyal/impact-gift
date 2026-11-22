@@ -2,6 +2,7 @@ import { Router, Response, Request } from 'express';
 import { body, validationResult } from 'express-validator';
 import { query } from '../database/db';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { GUEST_LIST_FORBIDDEN_MESSAGE, isGuestOnList } from '../utils/guestList';
 
 const router = Router();
 
@@ -78,6 +79,11 @@ router.post(
         return res.status(400).json({ error: 'Potluck not enabled for this event' });
       }
 
+      const eventIdNum = Number(eventId);
+      if (!(await isGuestOnList(eventIdNum, guest_email))) {
+        return res.status(403).json({ error: GUEST_LIST_FORBIDDEN_MESSAGE });
+      }
+
       // Add item
       const result = await query(
         `INSERT INTO potluck_items (event_id, item_name, guest_name, guest_email, quantity, category, notes)
@@ -109,7 +115,7 @@ router.post(
       const { guest_email } = req.body;
 
       const itemCheck = await query(
-        `SELECT id, is_suggested, guest_email, item_name FROM potluck_items WHERE id = $1`,
+        `SELECT id, event_id, is_suggested, guest_email, item_name FROM potluck_items WHERE id = $1`,
         [itemId]
       );
 
@@ -125,6 +131,10 @@ router.post(
 
       if (item.guest_email.toLowerCase() !== guest_email.toLowerCase()) {
         return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      if (!(await isGuestOnList(item.event_id, guest_email))) {
+        return res.status(403).json({ error: GUEST_LIST_FORBIDDEN_MESSAGE });
       }
 
       if (item.is_suggested) {
@@ -243,7 +253,7 @@ router.post(
 
       // Check if item exists and is unclaimed
       const itemCheck = await query(
-        `SELECT id, is_suggested, guest_email, item_name FROM potluck_items WHERE id = $1`,
+        `SELECT id, event_id, is_suggested, guest_email, item_name FROM potluck_items WHERE id = $1`,
         [itemId]
       );
 
@@ -252,6 +262,10 @@ router.post(
       }
 
       const item = itemCheck.rows[0];
+
+      if (!(await isGuestOnList(item.event_id, guest_email))) {
+        return res.status(403).json({ error: GUEST_LIST_FORBIDDEN_MESSAGE });
+      }
 
       if (!item.is_suggested) {
         return res.status(400).json({ error: 'This item cannot be claimed' });

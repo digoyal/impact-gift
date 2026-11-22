@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import type { Guest } from '../types';
 import { isAxiosError } from '../utils/errors';
 import { findGuestByEmail } from '../utils/findGuestByEmail';
+import { GUEST_LIST_FORBIDDEN_MESSAGE } from '../constants/guestList';
 
 interface RSVPSectionProps {
   guestEmail?: string | null;
@@ -25,6 +26,7 @@ const RSVPSection = ({
   const [rsvpComment, setRsvpComment] = useState('');
   const [additionalGuests, setAdditionalGuests] = useState(0);
   const [showForm, setShowForm] = useState(false);
+  const [notOnGuestList, setNotOnGuestList] = useState(false);
 
   // Guest mode fields (when not logged in / no email)
   const [guestName, setGuestName] = useState('');
@@ -46,14 +48,19 @@ const RSVPSection = ({
 
       if (matchedGuest) {
         setGuest(matchedGuest);
+        setNotOnGuestList(false);
         if (matchedGuest.rsvp_status !== 'no_response') {
           setRsvpStatus(matchedGuest.rsvp_status as 'attending' | 'not_attending' | 'maybe');
           setRsvpComment(matchedGuest.rsvp_comment || '');
           setAdditionalGuests(matchedGuest.additional_guests || 0);
         }
+      } else {
+        setGuest(null);
+        setNotOnGuestList(true);
       }
     } catch {
-      // Guest not found is fine — they can self-RSVP
+      setGuest(null);
+      setNotOnGuestList(Boolean(guestEmail));
     } finally {
       setLoading(false);
     }
@@ -63,13 +70,17 @@ const RSVPSection = ({
     e.preventDefault();
 
     if (isGuestMode) {
-      // Validate guest fields
       if (!guestName.trim()) {
         toast.error('Please enter your name');
         return;
       }
       if (!guestEmailInput.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmailInput)) {
         toast.error('Please enter a valid email address');
+        return;
+      }
+      const listed = await findGuestByEmail(eventId, guestEmailInput.trim());
+      if (!listed) {
+        toast.error(GUEST_LIST_FORBIDDEN_MESSAGE);
         return;
       }
     }
@@ -83,8 +94,7 @@ const RSVPSection = ({
 
     const submitWithRetry = async (retryCount = 0): Promise<void> => {
       try {
-        if (isGuestMode || !guest) {
-          // Guest self-RSVP: create guest record + RSVP in one call
+        if (isGuestMode) {
           const response = await api.post('/guests/rsvp-guest', {
             event_id: eventId,
             name: guestName.trim(),
@@ -95,7 +105,7 @@ const RSVPSection = ({
           }, { timeout: 15000 });
 
           setGuest(response.data);
-        } else {
+        } else if (guest) {
           // Existing guest RSVP update
           await api.post(`/guests/${guest.id}/rsvp`, {
             rsvp_status: rsvpStatus,
@@ -141,6 +151,20 @@ const RSVPSection = ({
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="text-gray-600">Loading RSVP...</div>
+      </div>
+    );
+  }
+
+  if (guestEmail && notOnGuestList) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        <h3 className="text-2xl font-bold mb-4 flex items-center">
+          <span className="mr-2">✉️</span> RSVP
+        </h3>
+        <p className="text-neutral-700">{GUEST_LIST_FORBIDDEN_MESSAGE}</p>
+        <p className="text-sm text-neutral-500 mt-2">
+          RSVPs are limited to guests the host invited. Contact the host if you think this is a mistake.
+        </p>
       </div>
     );
   }
@@ -191,7 +215,9 @@ const RSVPSection = ({
           {/* Guest info fields - shown when visitor is not a known guest */}
           {(isGuestMode && !hasRSVPd) && (
             <div className="space-y-3 pb-4 border-b border-gray-200">
-              <p className="text-sm text-gray-600">Please provide your details to RSVP.</p>
+              <p className="text-sm text-gray-600">
+                Enter the email address on your invitation. Only guests on the list can RSVP.
+              </p>
               <div>
                 <label htmlFor="guest_name" className="block text-sm font-medium text-gray-700 mb-1">
                   Your Name *

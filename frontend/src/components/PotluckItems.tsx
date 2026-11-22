@@ -4,6 +4,7 @@ import { PotluckItem } from '../types';
 import toast from 'react-hot-toast';
 import { isAxiosError } from '../utils/errors';
 import { findGuestByEmail } from '../utils/findGuestByEmail';
+import { GUEST_LIST_FORBIDDEN_MESSAGE } from '../constants/guestList';
 
 interface PotluckItemsProps {
   eventId: number;
@@ -45,11 +46,13 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
   const [claimingItemId, setClaimingItemId] = useState<number | null>(null);
   const [guestLookupLoading, setGuestLookupLoading] = useState(false);
   const [resolvedGuestName, setResolvedGuestName] = useState('');
+  const [isOnGuestList, setIsOnGuestList] = useState<boolean | null>(null);
 
   const knownEmail = (guestEmail || '').trim();
   const isInviteLink = Boolean(knownEmail);
   const emailLocked = isInviteLink;
   const nameLocked = Boolean(resolvedGuestName);
+  const invitePotluckBlocked = isInviteLink && (guestLookupLoading || isOnGuestList === false);
 
   const defaultGuestFields = useCallback(
     () => ({
@@ -74,6 +77,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
 
     if (!knownEmail) {
       setResolvedGuestName('');
+      setIsOnGuestList(null);
       const empty = emptyGuestFields();
       setClaimFormData(empty);
       setFormData((prev) => ({ ...prev, ...empty }));
@@ -86,6 +90,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
       if (cancelled) return;
       const name = guest?.name?.trim() || '';
       setResolvedGuestName(name);
+      setIsOnGuestList(guest !== null);
       applyGuestPrefill(name);
     }).finally(() => {
       if (!cancelled) setGuestLookupLoading(false);
@@ -107,6 +112,25 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
     }
   };
 
+  const ensureOnGuestList = async (email: string) => {
+    const listed = await findGuestByEmail(eventId, email);
+    if (!listed) {
+      toast.error(GUEST_LIST_FORBIDDEN_MESSAGE);
+      throw new Error('validation');
+    }
+    return listed;
+  };
+
+  const toastApiError = (error: unknown, fallback: string) => {
+    const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+    const status = isAxiosError(error) ? error.response?.status : undefined;
+    const errorMsg =
+      status === 403
+        ? (data?.error as string) || GUEST_LIST_FORBIDDEN_MESSAGE
+        : (data?.error as string) || fallback;
+    toast.error(errorMsg);
+  };
+
   const guestContactPayload = () => ({
     guest_name: (nameLocked ? resolvedGuestName : formData.guest_name).trim(),
     guest_email: (emailLocked ? knownEmail : formData.guest_email).trim(),
@@ -126,6 +150,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
     setSubmitting(true);
 
     try {
+      await ensureOnGuestList(contact.guest_email);
       await api.post(`/potluck/event/${eventId}/items`, { ...formData, ...contact });
       toast.success('Item added to potluck!');
       setShowAddModal(false);
@@ -138,9 +163,8 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
       });
       fetchItems();
     } catch (error: unknown) {
-      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = (data?.error as string) || 'Failed to add item';
-      toast.error(errorMsg);
+      if (error instanceof Error && error.message === 'validation') return;
+      toastApiError(error, 'Failed to add item');
     } finally {
       setSubmitting(false);
     }
@@ -159,9 +183,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
       toast.success('Unclaimed successfully');
       fetchItems();
     } catch (error: unknown) {
-      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = (data?.error as string) || 'Failed to unclaim item';
-      toast.error(errorMsg);
+      toastApiError(error, 'Failed to unclaim item');
     }
   };
 
@@ -200,6 +222,8 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
       throw new Error('validation');
     }
 
+    await ensureOnGuestList(contact.guest_email);
+
     await api.post(`/potluck/items/${item.id}/claim`, {
       ...contact,
       ...(isYourOwn ? { bringing_description: bringingDescription!.trim() } : {}),
@@ -227,7 +251,10 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
 
   const handleYourOwnInlineClaim = async (item: PotluckItem, e?: React.FormEvent) => {
     e?.preventDefault();
-    if (guestLookupLoading) return;
+    if (invitePotluckBlocked) {
+      toast.error(GUEST_LIST_FORBIDDEN_MESSAGE);
+      return;
+    }
 
     const description = (yourOwnDescriptions[item.id] || '').trim();
     const guestName = nameLocked
@@ -255,15 +282,17 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
       fetchItems();
     } catch (error: unknown) {
       if (error instanceof Error && error.message === 'validation') return;
-      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = (data?.error as string) || 'Failed to claim item';
-      toast.error(errorMsg);
+      toastApiError(error, 'Failed to claim item');
     } finally {
       setClaimingItemId(null);
     }
   };
 
   const handleClaimButtonClick = (item: PotluckItem) => {
+    if (invitePotluckBlocked) {
+      toast.error(GUEST_LIST_FORBIDDEN_MESSAGE);
+      return;
+    }
     const isYourOwn = isYourOwnSuggestedItem(item.item_name);
 
     if (!isInviteLink) {
@@ -307,15 +336,17 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
       fetchItems();
     } catch (error: unknown) {
       if (error instanceof Error && error.message === 'validation') return;
-      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
-      const errorMsg = (data?.error as string) || 'Failed to claim item';
-      toast.error(errorMsg);
+      toastApiError(error, 'Failed to claim item');
     } finally {
       setSubmitting(false);
     }
   };
 
   const openAddModal = () => {
+    if (invitePotluckBlocked) {
+      toast.error(GUEST_LIST_FORBIDDEN_MESSAGE);
+      return;
+    }
     setFormData({
       item_name: '',
       ...defaultGuestFields(),
@@ -344,16 +375,22 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
         <h2 className="text-xl font-bold text-gray-900">🍽️ Potluck Sign-Up</h2>
         <button
           onClick={openAddModal}
-          disabled={guestLookupLoading && isInviteLink}
+          disabled={invitePotluckBlocked}
           className="btn btn-primary text-sm"
         >
           + Bring Something
         </button>
       </div>
 
-      <p className="text-sm text-gray-600 mb-6">
+      <p className="text-sm text-gray-600 mb-4">
         Help make this event special by signing up to bring food, drinks, or other items!
       </p>
+
+      {isInviteLink && isOnGuestList === false && (
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+          {GUEST_LIST_FORBIDDEN_MESSAGE} Potluck sign-up is for invited guests only.
+        </p>
+      )}
 
       {/* Unclaimed Suggested Items */}
       {unclaimedItems.length > 0 && (
@@ -432,7 +469,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                           />
                           <button
                             type="submit"
-                            disabled={claimingItemId === item.id || guestLookupLoading}
+                            disabled={claimingItemId === item.id || invitePotluckBlocked}
                             className="btn btn-primary text-sm whitespace-nowrap px-3"
                           >
                             {claimingItemId === item.id ? '…' : 'Claim'}
@@ -443,7 +480,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
                       <button
                         type="button"
                         onClick={() => handleClaimButtonClick(item)}
-                        disabled={claimingItemId === item.id || (isInviteLink && guestLookupLoading)}
+                        disabled={claimingItemId === item.id || invitePotluckBlocked}
                         className="btn btn-primary text-sm whitespace-nowrap shrink-0"
                       >
                         {claimingItemId === item.id ? 'Claiming...' : 'Claim Item'}
