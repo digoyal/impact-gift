@@ -133,10 +133,12 @@ function DashboardEventCard({
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          <Link to={manageHref} className={`${dashboardCardActionBtn} btn-primary text-center`}>
-            Manage
-          </Link>
-          {showHostActions && onDuplicate && (
+          {!cancelled && (
+            <Link to={manageHref} className={`${dashboardCardActionBtn} btn-primary text-center`}>
+              Manage
+            </Link>
+          )}
+          {showHostActions && !cancelled && onDuplicate && (
             <button
               type="button"
               className={`${dashboardCardActionBtn} btn-secondary`}
