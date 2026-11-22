@@ -39,6 +39,30 @@ export function formatTime(timeString: string): string {
   return `${hours}:${minutes} ${period}`;
 }
 
+const GMT_OFFSET_ZONE = /^GMT[+-]\d/i;
+
+/** Short viewer timezone label (e.g. PT, ET) — never GMT+N offsets. */
+function localTimeZoneLabel(when: Date): string {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const readZone = (timeZoneName: Intl.DateTimeFormatOptions['timeZoneName']) =>
+    new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName })
+      .formatToParts(when)
+      .find((part) => part.type === 'timeZoneName')?.value ?? '';
+
+  const generic = readZone('shortGeneric');
+  if (generic && !GMT_OFFSET_ZONE.test(generic)) {
+    return generic;
+  }
+
+  const short = readZone('short');
+  if (short && !GMT_OFFSET_ZONE.test(short)) {
+    return short;
+  }
+
+  return '';
+}
+
 /**
  * Event start time in 12-hour form with a short timezone label (local display).
  */
@@ -52,10 +76,7 @@ export function formatEventTimeWithZone(timeString: string | undefined, eventDat
   const when = parseLocalDate(eventDate);
   when.setHours(hours, minutes, 0, 0);
 
-  const zone =
-    new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
-      .formatToParts(when)
-      .find((part) => part.type === 'timeZoneName')?.value ?? '';
+  const zone = localTimeZoneLabel(when);
 
   return zone ? `${formatted} ${zone}` : formatted;
 }
