@@ -574,13 +574,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-display text-neutral-900 mb-2">Dashboard</h1>
-          <p className="text-body-large text-neutral-600">Your events and invitations</p>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <h1 className="text-heading-3 text-neutral-900 mb-4">Dashboard</h1>
 
-        <div className="border-b border-neutral-200 mb-6">
+        <div className="border-b border-neutral-200 mb-4">
           <nav
             className="-mb-px flex flex-wrap items-center gap-x-0.5 sm:gap-x-1"
             role="tablist"
@@ -606,7 +603,7 @@ const Dashboard = () => {
                       setSelectedEventId(null);
                     }
                   }}
-                  className={`py-2.5 px-1 sm:px-1.5 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  className={`py-2 px-1 sm:px-1.5 border-b-2 font-medium text-sm whitespace-nowrap ${
                     activeTab === tab
                       ? 'border-primary-600 text-primary-600'
                       : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
@@ -620,7 +617,7 @@ const Dashboard = () => {
         </div>
 
         {showTimingFilters && (
-          <div className="mb-6">
+          <div className="mb-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
               <Link
@@ -630,12 +627,11 @@ const Dashboard = () => {
                 + Create Event
               </Link>
             </div>
-            <p className="text-sm text-neutral-600 mt-2">{dashboardTabHelperText[activeTab]}</p>
           </div>
         )}
 
         {activeTab === 'invitations' && (
-        <div className="mb-16">
+        <div className="mb-8">
           {invitationsLoading ? (
             <div className="flex flex-col gap-4 max-w-3xl">
               {[1, 2].map((i) => (
@@ -679,7 +675,7 @@ const Dashboard = () => {
         )}
 
         {activeTab === 'events' && (
-        <div className="mb-16">
+        <div className="mb-8">
           {eventsLoading ? (
             <div className="flex flex-col gap-4 max-w-3xl">
               {[1, 2, 3].map((i) => (
@@ -773,9 +769,9 @@ const Dashboard = () => {
         )}
 
         {activeTab === 'charity' && (
-        <div className="mb-16 animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <p className="text-sm text-neutral-600 mb-6">{dashboardTabHelperText.charity}</p>
-          <div className="space-y-8 max-w-3xl">
+        <div className="mb-8 animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <p className="text-xs text-neutral-500 mb-4">{dashboardTabHelperText.charity}</p>
+          <div className="space-y-6 max-w-3xl">
             <CharityPageCard />
             <FavoriteCharities />
           </div>
@@ -783,9 +779,10 @@ const Dashboard = () => {
         )}
 
         {activeTab === 'pledges' && (
-        <div className="mb-16 animate-fade-in" style={{ animationDelay: '100ms' }}>
+        <div className="mb-8 animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <p className="text-xs text-neutral-500 mb-3">{dashboardTabHelperText.pledges}</p>
           <div className="card">
-            <div className="flex items-center justify-end mb-6">
+            <div className="flex items-center justify-end mb-4">
               <Link to="/commitments" className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1">
                 View All
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
