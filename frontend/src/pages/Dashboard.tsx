@@ -394,8 +394,11 @@ const Dashboard = () => {
           <div className="mb-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <DashboardTimingPills selected={timingFilter} onChange={setTimingFilter} />
-              <Link to="/create-event" className={dashboardPillButtonClass(false)}>
-                Create Event
+              <Link
+                to="/create-event"
+                className="btn btn-primary btn-sm rounded-full !py-1 !min-h-0 font-medium shadow-md"
+              >
+                + Create Event
               </Link>
             </div>
             <p className="text-sm text-neutral-600 mt-2">{dashboardTabHelperText[activeTab]}</p>
