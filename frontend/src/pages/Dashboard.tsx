@@ -207,10 +207,8 @@ const dashboardTabHelperText: Record<DashboardTab, string> = {
 };
 
 function dashboardPillButtonClass(active: boolean) {
-  return `px-3 py-1 rounded-full text-sm font-medium transition-all ${
-    active
-      ? 'bg-primary-600 text-white shadow-md'
-      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+  return `px-3 py-1 rounded-full text-sm text-neutral-900 bg-transparent transition-all ${
+    active ? 'font-semibold ring-1 ring-neutral-900' : 'font-medium'
   }`;
 }
 
