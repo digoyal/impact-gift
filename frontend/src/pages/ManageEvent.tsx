@@ -52,10 +52,10 @@ const MANAGE_EVENT_TAB_IDS = [
   'details',
   'cohosts',
   'guests',
-  'communication',
-  'potluck',
-  'charities',
   'dresscode',
+  'potluck',
+  'communication',
+  'charities',
   'settings',
 ] as const;
 
