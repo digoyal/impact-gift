@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Papa from 'papaparse';
 import api from '../utils/api';
@@ -906,18 +906,10 @@ const ManageEvent = () => {
       {/* Tabs */}
       <div className="border-b border-neutral-200 mb-6 -mx-4 sm:mx-0">
         <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
-          <nav className="-mb-px flex flex-wrap items-center gap-x-0.5 sm:gap-x-1">
-            {manageTabs.map((tab, index) => (
-              <Fragment key={tab}>
-                {index > 0 && (
-                  <span
-                    className="text-neutral-300 text-sm leading-none select-none px-0.5"
-                    aria-hidden="true"
-                  >
-                    ·
-                  </span>
-                )}
-                <button
+          <nav className="-mb-px flex flex-wrap items-center gap-x-0">
+            {manageTabs.map((tab) => (
+              <button
+                  key={tab}
                   type="button"
                   onClick={() => {
                     setActiveTab(tab);
@@ -926,8 +918,8 @@ const ManageEvent = () => {
                   title={tab === 'settings' ? 'Settings' : undefined}
                   className={`border-b-2 font-medium text-sm whitespace-nowrap ${
                     tab === 'settings'
-                      ? 'inline-flex items-center justify-center min-h-10 min-w-10 px-2 py-2'
-                      : 'py-2.5 px-1 sm:px-1.5'
+                      ? 'inline-flex items-center justify-center min-h-10 min-w-10 px-1.5 py-2'
+                      : 'py-2.5 px-0.5 sm:px-1'
                   } ${
                     activeTab === tab
                       ? 'border-primary-600 text-primary-600'
@@ -940,7 +932,6 @@ const ManageEvent = () => {
                     manageTabLabels[tab]
                   )}
                 </button>
-              </Fragment>
             ))}
           </nav>
         </div>
