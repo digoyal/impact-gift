@@ -52,6 +52,7 @@ interface DashboardEventCardProps {
   showHostActions?: boolean;
   onDuplicate?: () => void;
   onCancel?: () => void;
+  onDelete?: () => void;
   actionsBusy?: boolean;
 }
 
@@ -72,6 +73,7 @@ function DashboardEventCard({
   showHostActions = false,
   onDuplicate,
   onCancel,
+  onDelete,
   actionsBusy = false,
 }: DashboardEventCardProps) {
   const timingLabel = isEventDatePast(eventDate, cancelled) ? 'Past' : 'Upcoming';
@@ -152,6 +154,16 @@ function DashboardEventCard({
               onClick={onCancel}
             >
               Cancel
+            </button>
+          )}
+          {showHostActions && onDelete && (
+            <button
+              type="button"
+              className={`${dashboardCardActionBtn} btn-secondary text-red-700 hover:text-red-800 border-red-200 hover:border-red-300`}
+              disabled={actionsBusy}
+              onClick={onDelete}
+            >
+              Delete
             </button>
           )}
         </div>
@@ -317,6 +329,8 @@ const Dashboard = () => {
   const [cancelModalEvent, setCancelModalEvent] = useState<Event | null>(null);
   const [cancellationReason, setCancellationReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [deleteModalEvent, setDeleteModalEvent] = useState<Event | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const filteredEvents = useMemo(
     () => events.filter((event) => matchesEventTimingFilter(event.event_date, timingFilter, event.cancelled)),
@@ -388,6 +402,35 @@ const Dashboard = () => {
       toast.error((data?.error as string) || 'Failed to cancel event');
     } finally {
       setCancelling(false);
+      setEventActionBusy(false);
+    }
+  };
+
+  const openDeleteEventModal = (event: Event) => {
+    setDeleteModalEvent(event);
+  };
+
+  const closeDeleteEventModal = () => {
+    if (deleting) return;
+    setDeleteModalEvent(null);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!deleteModalEvent) return;
+
+    setDeleting(true);
+    setEventActionBusy(true);
+    try {
+      await api.delete(`/events/${deleteModalEvent.id}`);
+      toast.success('Event deleted permanently.');
+      setDeleteModalEvent(null);
+      setSelectedEventId(null);
+      await fetchDashboardSummary();
+    } catch (error: unknown) {
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      toast.error((data?.error as string) || 'Failed to delete event');
+    } finally {
+      setDeleting(false);
       setEventActionBusy(false);
     }
   };
@@ -702,6 +745,11 @@ const Dashboard = () => {
                           ? () => openCancelEventModal(event)
                           : undefined
                       }
+                      onDelete={
+                        event.user_role === 'owner' && event.cancelled === true
+                          ? () => openDeleteEventModal(event)
+                          : undefined
+                      }
                       actionsBusy={eventActionBusy}
                       badgeExtra={
                         event.user_role === 'cohost' ? (
@@ -779,6 +827,45 @@ const Dashboard = () => {
           <FavoriteCharities />
         </div>
       </div>
+
+      {deleteModalEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Delete Event</h2>
+              <p className="text-sm text-gray-600 mt-1">{deleteModalEvent.title}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800">
+                  <strong>⚠️ Warning:</strong> This permanently removes the event and its related data from ImpactGift.
+                  This cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteEventModal}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Keep Event
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteEvent}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Deleting...' : 'Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {cancelModalEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

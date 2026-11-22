@@ -1009,4 +1009,39 @@ ${organizerName}`;
   }
 });
 
+// Permanently delete a cancelled event (owner only)
+router.delete('/:identifier', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { identifier } = req.params;
+    const userId = req.user!.id;
+
+    const eventResult = await query(
+      `SELECT id, user_id, cancelled FROM events
+       WHERE (id::text = $1 OR slug = $1) AND is_active = true`,
+      [identifier]
+    );
+
+    if (eventResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    const event = eventResult.rows[0];
+
+    if (event.user_id !== userId) {
+      return res.status(403).json({ error: 'Not authorized to delete this event' });
+    }
+
+    if (!event.cancelled) {
+      return res.status(400).json({ error: 'Only cancelled events can be permanently deleted' });
+    }
+
+    await query(`DELETE FROM events WHERE id = $1`, [event.id]);
+
+    res.json({ success: true, message: 'Event deleted permanently' });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
 export default router;
