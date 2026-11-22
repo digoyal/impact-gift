@@ -38,9 +38,9 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
     guest_email: '',
   });
   const [claimBringingDescription, setClaimBringingDescription] = useState('');
-  const [claimModalVariant, setClaimModalVariant] = useState<'full' | 'your-own' | 'name-only' | null>(
-    null
-  );
+  const [claimModalVariant, setClaimModalVariant] = useState<'full' | 'name-only' | null>(null);
+  const [yourOwnDescriptions, setYourOwnDescriptions] = useState<Record<number, string>>({});
+  const [yourOwnInlineNames, setYourOwnInlineNames] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [claimingItemId, setClaimingItemId] = useState<number | null>(null);
   const [guestLookupLoading, setGuestLookupLoading] = useState(false);
@@ -225,6 +225,44 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
     }
   };
 
+  const handleYourOwnInlineClaim = async (item: PotluckItem, e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (guestLookupLoading) return;
+
+    const description = (yourOwnDescriptions[item.id] || '').trim();
+    const guestName = nameLocked
+      ? resolvedGuestName
+      : (yourOwnInlineNames[item.id] || '').trim();
+
+    setClaimingItemId(item.id);
+    try {
+      await executeClaim(
+        item,
+        { guest_name: guestName, guest_email: knownEmail },
+        description
+      );
+      toast.success('Item claimed successfully!');
+      setYourOwnDescriptions((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+      setYourOwnInlineNames((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+      fetchItems();
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'validation') return;
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      const errorMsg = (data?.error as string) || 'Failed to claim item';
+      toast.error(errorMsg);
+    } finally {
+      setClaimingItemId(null);
+    }
+  };
+
   const handleClaimButtonClick = (item: PotluckItem) => {
     const isYourOwn = isYourOwnSuggestedItem(item.item_name);
 
@@ -237,15 +275,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
       return;
     }
 
-    if (guestLookupLoading) return;
-
-    if (isYourOwn) {
-      setSelectedItem(item);
-      setClaimBringingDescription('');
-      setClaimModalVariant('your-own');
-      setShowClaimModal(true);
-      return;
-    }
+    if (guestLookupLoading || isYourOwn) return;
 
     if (nameLocked) {
       void quickClaimItem(item);
@@ -332,44 +362,97 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
             📋 Suggested Items - Claim one!
           </h3>
           <div className="space-y-3">
-            {unclaimedItems.map((item) => (
-              <div
-                key={item.id}
-                className="border-2 border-primary-200 bg-primary-50 rounded-lg p-4 hover:border-primary-400 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-gray-900">{item.item_name}</h3>
-                      {item.quantity > 1 && (
-                        <span className="text-sm text-gray-500">× {item.quantity}</span>
-                      )}
-                      {item.category && (
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
-                          {item.category}
+            {unclaimedItems.map((item) => {
+              const isYourOwnRow = isYourOwnSuggestedItem(item.item_name);
+              const showYourOwnInline = isYourOwnRow && isInviteLink;
+
+              return (
+                <div
+                  key={item.id}
+                  className="border-2 border-primary-200 bg-primary-50 rounded-lg p-4 hover:border-primary-400 transition-colors"
+                >
+                  <div
+                    className={`flex gap-3 ${
+                      showYourOwnInline ? 'flex-col sm:flex-row sm:items-end' : 'items-start justify-between'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-gray-900">{item.item_name}</h3>
+                        {item.quantity > 1 && (
+                          <span className="text-sm text-gray-500">× {item.quantity}</span>
+                        )}
+                        {item.category && (
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                            {item.category}
+                          </span>
+                        )}
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
+                          Unclaimed
                         </span>
+                      </div>
+                      {item.notes && (
+                        <p className="text-sm text-gray-600 mt-2 italic">{item.notes}</p>
                       )}
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
-                        Unclaimed
-                      </span>
                     </div>
-                    {item.notes && (
-                      <p className="text-sm text-gray-600 mt-2 italic">
-                        {item.notes}
-                      </p>
+
+                    {showYourOwnInline ? (
+                      <form
+                        onSubmit={(e) => void handleYourOwnInlineClaim(item, e)}
+                        className="flex flex-col gap-2 w-full sm:w-auto sm:min-w-[min(100%,20rem)] sm:max-w-md shrink-0"
+                      >
+                        {!nameLocked && (
+                          <input
+                            type="text"
+                            required
+                            className="input text-sm py-1.5"
+                            placeholder="Your name"
+                            value={yourOwnInlineNames[item.id] || ''}
+                            onChange={(e) =>
+                              setYourOwnInlineNames((prev) => ({
+                                ...prev,
+                                [item.id]: e.target.value,
+                              }))
+                            }
+                          />
+                        )}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            required
+                            className="input text-sm py-1.5 flex-1 min-w-0"
+                            placeholder="What are you bringing?"
+                            value={yourOwnDescriptions[item.id] || ''}
+                            onChange={(e) =>
+                              setYourOwnDescriptions((prev) => ({
+                                ...prev,
+                                [item.id]: e.target.value,
+                              }))
+                            }
+                          />
+                          <button
+                            type="submit"
+                            disabled={claimingItemId === item.id || guestLookupLoading}
+                            className="btn btn-primary text-sm whitespace-nowrap px-3"
+                          >
+                            {claimingItemId === item.id ? '…' : 'Claim'}
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleClaimButtonClick(item)}
+                        disabled={claimingItemId === item.id || (isInviteLink && guestLookupLoading)}
+                        className="btn btn-primary text-sm whitespace-nowrap shrink-0"
+                      >
+                        {claimingItemId === item.id ? 'Claiming...' : 'Claim Item'}
+                      </button>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleClaimButtonClick(item)}
-                    disabled={claimingItemId === item.id || (isInviteLink && guestLookupLoading)}
-                    className="btn btn-primary text-sm whitespace-nowrap"
-                  >
-                    {claimingItemId === item.id ? 'Claiming...' : 'Claim Item'}
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -589,9 +672,7 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">
-                {claimModalVariant === 'your-own' ? 'What are you bringing?' : 'Claim Item'}
-              </h3>
+              <h3 className="text-xl font-bold">Claim Item</h3>
               <button
                 type="button"
                 onClick={closeClaimModal}
@@ -612,42 +693,23 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
             </div>
 
             <form onSubmit={handleClaimItem} className="space-y-4">
-              {selectedItem &&
-                (claimModalVariant === 'your-own' ||
-                  (claimModalVariant === 'full' && isYourOwnSuggestedItem(selectedItem.item_name))) && (
-                  <div>
-                    <label
-                      htmlFor="claim_bringing_description"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      What are you bringing? *
-                    </label>
-                    <input
-                      id="claim_bringing_description"
-                      type="text"
-                      required
-                      className="input"
-                      placeholder="e.g., Homemade guacamole"
-                      value={claimBringingDescription}
-                      onChange={(e) => setClaimBringingDescription(e.target.value)}
-                      autoFocus
-                    />
-                  </div>
-                )}
-
-              {claimModalVariant === 'your-own' && !nameLocked && (
+              {claimModalVariant === 'full' && isYourOwnSuggestedItem(selectedItem.item_name) && (
                 <div>
-                  <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Name *
+                  <label
+                    htmlFor="claim_bringing_description"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    What are you bringing? *
                   </label>
                   <input
-                    id="claim_guest_name"
+                    id="claim_bringing_description"
                     type="text"
                     required
                     className="input"
-                    placeholder="e.g., Sarah Johnson"
-                    value={claimFormData.guest_name}
-                    onChange={(e) => setClaimFormData({ ...claimFormData, guest_name: e.target.value })}
+                    placeholder="e.g., Homemade guacamole"
+                    value={claimBringingDescription}
+                    onChange={(e) => setClaimBringingDescription(e.target.value)}
+                    autoFocus
                   />
                 </div>
               )}
@@ -672,84 +734,41 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
 
               {claimModalVariant === 'full' && (
                 <>
-                  {!isYourOwnSuggestedItem(selectedItem.item_name) && (
-                    <>
-                      <div>
-                        <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
-                          Your Name *
-                        </label>
-                        <input
-                          id="claim_guest_name"
-                          type="text"
-                          required
-                          className="input"
-                          placeholder="e.g., Sarah Johnson"
-                          value={claimFormData.guest_name}
-                          onChange={(e) =>
-                            setClaimFormData({ ...claimFormData, guest_name: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="claim_guest_email" className="block text-sm font-medium text-gray-700 mb-1">
-                          Your Email *
-                        </label>
-                        <input
-                          id="claim_guest_email"
-                          type="email"
-                          required
-                          className="input"
-                          placeholder="e.g., sarah@example.com"
-                          value={claimFormData.guest_email}
-                          onChange={(e) =>
-                            setClaimFormData({ ...claimFormData, guest_email: e.target.value })
-                          }
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          We'll use this to verify you can unclaim later
-                        </p>
-                      </div>
-                    </>
-                  )}
-                  {isYourOwnSuggestedItem(selectedItem.item_name) && (
-                    <>
-                      <div>
-                        <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
-                          Your Name *
-                        </label>
-                        <input
-                          id="claim_guest_name"
-                          type="text"
-                          required
-                          className="input"
-                          placeholder="e.g., Sarah Johnson"
-                          value={claimFormData.guest_name}
-                          onChange={(e) =>
-                            setClaimFormData({ ...claimFormData, guest_name: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="claim_guest_email" className="block text-sm font-medium text-gray-700 mb-1">
-                          Your Email *
-                        </label>
-                        <input
-                          id="claim_guest_email"
-                          type="email"
-                          required
-                          className="input"
-                          placeholder="e.g., sarah@example.com"
-                          value={claimFormData.guest_email}
-                          onChange={(e) =>
-                            setClaimFormData({ ...claimFormData, guest_email: e.target.value })
-                          }
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          We'll use this to verify you can unclaim later
-                        </p>
-                      </div>
-                    </>
-                  )}
+                  <div>
+                    <label htmlFor="claim_guest_name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Your Name *
+                    </label>
+                    <input
+                      id="claim_guest_name"
+                      type="text"
+                      required
+                      className="input"
+                      placeholder="e.g., Sarah Johnson"
+                      value={claimFormData.guest_name}
+                      onChange={(e) =>
+                        setClaimFormData({ ...claimFormData, guest_name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="claim_guest_email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Your Email *
+                    </label>
+                    <input
+                      id="claim_guest_email"
+                      type="email"
+                      required
+                      className="input"
+                      placeholder="e.g., sarah@example.com"
+                      value={claimFormData.guest_email}
+                      onChange={(e) =>
+                        setClaimFormData({ ...claimFormData, guest_email: e.target.value })
+                      }
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      We'll use this to verify you can unclaim later
+                    </p>
+                  </div>
                 </>
               )}
 
