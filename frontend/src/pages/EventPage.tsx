@@ -262,8 +262,7 @@ const EventPage = () => {
             {/* Event Details Card */}
             {(event.start_time || event.end_time || event.venue_name || event.address || event.host_name || event.host_phone || event.rsvp_deadline) && (
               <div className="card">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-heading-2 text-neutral-900">Event Details</h2>
+                <div className="flex justify-end mb-4">
                   <a
                     href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/calendar/event/${event.slug}`}
                     download
