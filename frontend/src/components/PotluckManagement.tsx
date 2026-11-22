@@ -59,7 +59,7 @@ const PotluckItemsTable = ({
         </thead>
         <tbody className="divide-y divide-gray-100 bg-white">
           {items.map((item) => (
-            <tr key={item.id} className={rowTint}>
+            <tr key={item.id} className={`${rowTint}${compactRows ? ' whitespace-nowrap' : ''}`}>
               {compactRows ? (
                 <>
                   <td className="px-3 py-2 text-xs font-medium text-gray-900 whitespace-nowrap align-middle">

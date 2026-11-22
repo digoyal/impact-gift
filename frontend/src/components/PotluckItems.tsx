@@ -20,6 +20,11 @@ function isYourOwnSuggestedItem(itemName: string): boolean {
   return itemName.trim().toLowerCase() === 'your own';
 }
 
+const formatPotluckCategory = (category?: string) => (category?.trim() ? category : '—');
+
+const formatPotluckItemWithQty = (item: PotluckItem) =>
+  item.quantity > 1 ? `${item.item_name} × ${item.quantity}` : item.item_name;
+
 const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
   const [items, setItems] = useState<PotluckItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -504,46 +509,63 @@ const PotluckItems = ({ eventId, guestEmail }: PotluckItemsProps) => {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
             ✓ Claimed Items
           </h3>
-          <div className="space-y-3">
-            {claimedItems.map((item) => (
-              <div
-                key={item.id}
-                className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-gray-900">{item.item_name}</h3>
-                      {item.quantity > 1 && (
-                        <span className="text-sm text-gray-500">× {item.quantity}</span>
-                      )}
-                      {item.category && (
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
-                          {item.category}
+          <div className="overflow-x-auto -mx-1 sm:mx-0 border border-gray-200 rounded-lg">
+            <table className="min-w-[520px] w-full border-collapse text-sm">
+              <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-3 py-2 text-left">Item</th>
+                  <th className="px-3 py-2 text-left w-32">Category</th>
+                  <th className="px-3 py-2 text-left w-36">Claimed by</th>
+                  <th className="px-3 py-2 text-left">Notes</th>
+                  <th className="px-3 py-2 text-left w-20"> </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {claimedItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-neutral-50/80">
+                    <td className="px-3 py-2 text-xs font-medium text-gray-900 whitespace-nowrap align-middle">
+                      <span className="truncate max-w-[14rem] inline-block" title={formatPotluckItemWithQty(item)}>
+                        {formatPotluckItemWithQty(item)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 align-middle whitespace-nowrap">
+                      <span className="inline-flex text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                        {formatPotluckCategory(item.category)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-800 whitespace-nowrap align-middle">
+                      <span
+                        className="font-medium truncate max-w-[9rem] inline-block"
+                        title={item.guest_email ? `${item.guest_name || ''} (${item.guest_email})`.trim() : item.guest_name || undefined}
+                      >
+                        {item.guest_name || '—'}
+                      </span>
+                    </td>
+                    <td
+                      className="px-3 py-2 text-xs text-gray-600 max-w-[10rem] truncate italic align-middle whitespace-nowrap"
+                      title={item.notes || undefined}
+                    >
+                      {item.notes?.trim() ? item.notes : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-left whitespace-nowrap align-middle">
+                      {canUnclaimAsCurrentGuest(item.guest_email) ? (
+                        <button
+                          type="button"
+                          onClick={() => handleUnclaimItem(item.id)}
+                          className="text-sm text-primary-700 hover:text-primary-800 font-medium whitespace-nowrap"
+                        >
+                          Unclaim
+                        </button>
+                      ) : (
+                        <span className="text-gray-300" aria-hidden="true">
+                          —
                         </span>
                       )}
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {item.guest_name}
-                    </p>
-                    {item.notes && (
-                      <p className="text-sm text-gray-500 mt-2 italic">
-                        {item.notes}
-                      </p>
-                    )}
-                  </div>
-                  {canUnclaimAsCurrentGuest(item.guest_email) && (
-                    <button
-                      type="button"
-                      onClick={() => handleUnclaimItem(item.id)}
-                      className="text-sm text-primary-700 hover:text-primary-800 font-medium whitespace-nowrap"
-                    >
-                      Unclaim
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
