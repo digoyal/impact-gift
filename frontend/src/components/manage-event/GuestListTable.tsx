@@ -46,6 +46,7 @@ function GuestStatusInline({ guest, organizer }: { guest: Guest; organizer: bool
 export interface GuestListTableProps {
   ownerEmail: string | null;
   guests: Guest[];
+  allowAdditionalGuests?: boolean;
   impactGiftOn?: boolean;
   pendingInvites?: number;
   onSendInvitations?: () => void;
@@ -69,6 +70,7 @@ export interface GuestListTableProps {
 const GuestListTable = ({
   ownerEmail,
   guests,
+  allowAdditionalGuests = true,
   impactGiftOn = false,
   pendingInvites = 0,
   onSendInvitations,
@@ -149,6 +151,7 @@ const GuestListTable = ({
                       <AdditionalGuestsControl
                         displayMode="partySize"
                         value={editAdditionalGuests}
+                        disabled={!allowAdditionalGuests}
                         saving={additionalGuestsSavingId === guest.id}
                         onChange={onEditAdditionalGuestsChange}
                       />
@@ -190,6 +193,7 @@ const GuestListTable = ({
                     <AdditionalGuestsControl
                       displayMode="partySize"
                       value={guest.additional_guests ?? 0}
+                      disabled={!allowAdditionalGuests}
                       saving={additionalGuestsSavingId === guest.id}
                       onChange={(next) => onUpdateAdditionalGuests(guest.id, next)}
                     />

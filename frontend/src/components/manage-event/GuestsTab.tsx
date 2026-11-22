@@ -7,6 +7,7 @@ const compactInputClass =
 interface GuestsTabProps {
   ownerEmail: string | null;
   guests: Guest[];
+  allowAdditionalGuests?: boolean;
   impactGiftOn?: boolean;
   guestEmail: string;
   guestName: string;
@@ -37,6 +38,7 @@ interface GuestsTabProps {
 const GuestsTab = ({
   ownerEmail,
   guests,
+  allowAdditionalGuests = true,
   impactGiftOn = false,
   guestEmail,
   guestName,
@@ -122,6 +124,7 @@ const GuestsTab = ({
       <GuestListTable
         ownerEmail={ownerEmail}
         guests={guests}
+        allowAdditionalGuests={allowAdditionalGuests}
         impactGiftOn={impactGiftOn}
         pendingInvites={pendingInvites}
         onSendInvitations={onSendInvitations}

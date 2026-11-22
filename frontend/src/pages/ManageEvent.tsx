@@ -1174,6 +1174,7 @@ const ManageEvent = () => {
         <GuestsTab
           ownerEmail={ownerEmail}
           guests={displayGuests}
+          allowAdditionalGuests={formData.allow_additional_guests}
           impactGiftOn={impactGiftOn}
           guestEmail={guestEmail}
           guestName={guestName}
