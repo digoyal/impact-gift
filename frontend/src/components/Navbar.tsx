@@ -23,7 +23,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="text-xl sm:text-2xl font-bold text-primary-600">
+            <Link to={user ? '/dashboard' : '/'} className="text-xl sm:text-2xl font-bold text-primary-600">
               Impact Gift
             </Link>
           </div>
