@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Papa from 'papaparse';
 import api from '../utils/api';
@@ -907,9 +907,9 @@ const ManageEvent = () => {
       <div className="border-b border-neutral-200 mb-6 -mx-4 sm:mx-0">
         <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
           <nav className="-mb-px flex flex-wrap items-center gap-x-0">
-            {manageTabs.map((tab) => (
-              <button
-                  key={tab}
+            {manageTabs.map((tab, index) => (
+              <Fragment key={tab}>
+                <button
                   type="button"
                   onClick={() => {
                     setActiveTab(tab);
@@ -932,6 +932,13 @@ const ManageEvent = () => {
                     manageTabLabels[tab]
                   )}
                 </button>
+                {index < manageTabs.length - 1 && (
+                  <span
+                    className="w-px h-5 shrink-0 self-center bg-gray-200"
+                    aria-hidden="true"
+                  />
+                )}
+              </Fragment>
             ))}
           </nav>
         </div>
