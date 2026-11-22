@@ -7,6 +7,7 @@ import { Event } from '../types';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import FavoriteCharities from '../components/FavoriteCharities';
+import CharityPageCard from '../components/CharityPageCard';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 interface Invitation {
   id: number;
@@ -29,7 +30,7 @@ interface Invitation {
   event_image_url?: string;
 }
 
-type DashboardTab = 'events' | 'invitations' | 'pledges';
+type DashboardTab = 'events' | 'invitations' | 'pledges' | 'charity';
 
 const dashboardCardActionBtn =
   'btn btn-sm w-full !min-h-0 !py-1.5 px-3 text-xs font-medium whitespace-nowrap';
@@ -295,18 +296,20 @@ function DashboardEventCardSkeleton() {
   );
 }
 
-const dashboardTabs: DashboardTab[] = ['events', 'invitations', 'pledges'];
+const dashboardTabs: DashboardTab[] = ['events', 'invitations', 'pledges', 'charity'];
 
 const dashboardTabLabels: Record<DashboardTab, string> = {
   events: 'My Events',
   invitations: 'My Invitations',
   pledges: 'Donation Pledges',
+  charity: 'My Charity Page',
 };
 
 const dashboardTabHelperText: Record<DashboardTab, string> = {
   events: "Events you're hosting",
   invitations: "Events you've been invited to",
   pledges: 'Summary of pledges you made and received',
+  charity: 'Share your page and manage favorite charities',
 };
 
 function dashboardPillButtonClass(active: boolean) {
@@ -599,7 +602,7 @@ const Dashboard = () => {
                   aria-selected={activeTab === tab}
                   onClick={() => {
                     setActiveTab(tab);
-                    if (tab === 'invitations' || tab === 'pledges') {
+                    if (tab === 'invitations' || tab === 'pledges' || tab === 'charity') {
                       setSelectedEventId(null);
                     }
                   }}
@@ -769,6 +772,42 @@ const Dashboard = () => {
         </div>
         )}
 
+        {activeTab === 'charity' && (
+        <div className="mb-16 animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <p className="text-sm text-neutral-600 mb-6">{dashboardTabHelperText.charity}</p>
+          {!user?.charity_page_slug ? (
+            <div className="card-info text-center py-16 animate-fade-in max-w-3xl">
+              <svg
+                className="w-16 h-16 text-neutral-400 mx-auto mb-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+              <h2 className="text-heading-2 mb-3 text-neutral-900">No charity page yet</h2>
+              <p className="text-body-large text-neutral-600 mb-8 max-w-md mx-auto">
+                Set a custom URL in your profile to share favorite charities and receive donation pledges.
+              </p>
+              <Link to="/profile" className="btn btn-primary inline-flex">
+                Set up in Profile
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-8 max-w-3xl">
+              <CharityPageCard />
+              <FavoriteCharities />
+            </div>
+          )}
+        </div>
+        )}
+
         {activeTab === 'pledges' && (
         <div className="mb-16 animate-fade-in" style={{ animationDelay: '100ms' }}>
           <div className="card">
@@ -815,11 +854,6 @@ const Dashboard = () => {
           </div>
         </div>
         )}
-
-        {/* Favorite Charities Section */}
-        <div className="animate-fade-in" style={{ animationDelay: '150ms' }}>
-          <FavoriteCharities />
-        </div>
       </div>
 
       {deleteModalEvent && (
