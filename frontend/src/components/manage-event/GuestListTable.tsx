@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Guest } from '../../types';
 import { isOrganizerGuest } from '../../utils/eventOrganizerGuest';
 import AdditionalGuestsControl from './AdditionalGuestsControl';
@@ -166,83 +167,119 @@ const GuestListTable = ({
               }
 
               const comment = guest.rsvp_comment?.trim();
+              const rowClass = organizer ? 'bg-neutral-50' : undefined;
 
-              return (
-                <tr key={guest.id} className={organizer ? 'bg-neutral-50' : undefined}>
-                  <td colSpan={2} className="p-0 align-top min-w-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-gray-100">
-                      <div className="px-4 py-3 text-sm whitespace-nowrap min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span>{guest.name || '—'}</span>
-                          {organizer && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-primary-100 text-primary-800">Host</span>
-                          )}
-                        </div>
-                      </div>
-                      <div
-                        className="px-4 py-3 text-sm text-neutral-700 min-w-0 whitespace-normal sm:whitespace-nowrap sm:truncate"
-                        title={guest.email}
-                      >
-                        {guest.email}
-                      </div>
-                    </div>
-                    {comment && (
-                      <div className="mx-4 border-t border-gray-200 pt-2 pb-3 text-xs text-neutral-500 italic whitespace-normal leading-snug">
-                        &ldquo;{comment}&rdquo;
-                      </div>
+              const nameCell = (
+                <td className="px-4 py-3 align-top text-sm whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <span>{guest.name || '—'}</span>
+                    {organizer && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-primary-100 text-primary-800">Host</span>
+                    )}
+                  </div>
+                </td>
+              );
+
+              const emailCell = (
+                <td className="px-4 py-3 align-top text-sm text-neutral-700 max-w-[12rem] w-[12rem] min-w-0">
+                  <span className="block truncate" title={guest.email}>
+                    {guest.email}
+                  </span>
+                </td>
+              );
+
+              const statusCell = (rowSpan?: number) => (
+                <td rowSpan={rowSpan} className="px-4 py-3 align-top whitespace-nowrap">
+                  <GuestStatusInline guest={guest} organizer={organizer} />
+                </td>
+              );
+
+              const numGuestsCell = (rowSpan?: number) => (
+                <td rowSpan={rowSpan} className="px-4 py-3 align-top">
+                  <AdditionalGuestsControl
+                    displayMode="partySize"
+                    value={guest.additional_guests ?? 0}
+                    disabled={!allowAdditionalGuests}
+                    saving={additionalGuestsSavingId === guest.id}
+                    onChange={(next) => onUpdateAdditionalGuests(guest.id, next)}
+                  />
+                </td>
+              );
+
+              const donatedCell = (rowSpan?: number) =>
+                impactGiftOn ? (
+                  <td rowSpan={rowSpan} className="px-4 py-3 align-top text-sm whitespace-nowrap">
+                    {guest.has_donated ? (
+                      <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 align-top whitespace-nowrap">
-                    <GuestStatusInline guest={guest} organizer={organizer} />
-                  </td>
-                  <td className="px-4 py-3 align-top">
-                    <AdditionalGuestsControl
-                      displayMode="partySize"
-                      value={guest.additional_guests ?? 0}
-                      disabled={!allowAdditionalGuests}
-                      saving={additionalGuestsSavingId === guest.id}
-                      onChange={(next) => onUpdateAdditionalGuests(guest.id, next)}
-                    />
-                  </td>
-                  {impactGiftOn && (
-                    <td className="px-4 py-3 align-top text-sm whitespace-nowrap">
-                      {guest.has_donated ? (
-                        <span className="text-green-600 font-medium">${Number(guest.donated_amount || 0).toFixed(2)}</span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
+                ) : null;
+
+              const actionsCell = (rowSpan?: number) => (
+                <td rowSpan={rowSpan} className="px-4 py-3 align-top text-right text-sm whitespace-nowrap space-x-2">
+                  {!organizer && guest.invitation_sent && (
+                    <button
+                      type="button"
+                      onClick={() => onResendInvitation(guest.id)}
+                      className="text-primary-600 hover:text-primary-800"
+                      title="Resend invitation"
+                    >
+                      Resend
+                    </button>
                   )}
-                  <td className="px-4 py-3 align-top text-right text-sm whitespace-nowrap space-x-2">
-                    {!organizer && guest.invitation_sent && (
+                  {!organizer && (
+                    <>
                       <button
                         type="button"
-                        onClick={() => onResendInvitation(guest.id)}
+                        onClick={() => onStartEdit(guest)}
                         className="text-primary-600 hover:text-primary-800"
-                        title="Resend invitation"
                       >
-                        Resend
+                        Edit
                       </button>
-                    )}
-                    {!organizer && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => onStartEdit(guest)}
-                          className="text-primary-600 hover:text-primary-800"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onRemoveGuest(guest.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Remove
-                        </button>
-                      </>
-                    )}
-                  </td>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveGuest(guest.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </>
+                  )}
+                </td>
+              );
+
+              if (comment) {
+                return (
+                  <Fragment key={guest.id}>
+                    <tr className={rowClass}>
+                      {nameCell}
+                      {emailCell}
+                      {statusCell(2)}
+                      {numGuestsCell(2)}
+                      {donatedCell(2)}
+                      {actionsCell(2)}
+                    </tr>
+                    <tr className={rowClass}>
+                      <td colSpan={2} className="px-4 pt-0 pb-3 border-t border-gray-200 align-top">
+                        <p className="text-xs text-neutral-500 italic whitespace-normal leading-snug">
+                          &ldquo;{comment}&rdquo;
+                        </p>
+                      </td>
+                    </tr>
+                  </Fragment>
+                );
+              }
+
+              return (
+                <tr key={guest.id} className={rowClass}>
+                  {nameCell}
+                  {emailCell}
+                  {statusCell()}
+                  {numGuestsCell()}
+                  {donatedCell()}
+                  {actionsCell()}
                 </tr>
               );
             })}
