@@ -10,11 +10,10 @@ interface TimeLeft {
   days: number;
   hours: number;
   minutes: number;
-  seconds: number;
 }
 
 const EventCountdown: React.FC<EventCountdownProps> = ({ eventDate }) => {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0 });
   const [isEventPast, setIsEventPast] = useState(false);
 
   useEffect(() => {
@@ -31,13 +30,12 @@ const EventCountdown: React.FC<EventCountdownProps> = ({ eventDate }) => {
       const days = Math.floor(totalSeconds / (24 * 60 * 60));
       const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
       const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
-      const seconds = totalSeconds % 60;
 
-      setTimeLeft({ days, hours, minutes, seconds });
+      setTimeLeft({ days, hours, minutes });
     };
 
     calculateTimeLeft();
-    const timer = setInterval(calculateTimeLeft, 1000);
+    const timer = setInterval(calculateTimeLeft, 60_000);
 
     return () => clearInterval(timer);
   }, [eventDate]);
@@ -74,7 +72,7 @@ const EventCountdown: React.FC<EventCountdownProps> = ({ eventDate }) => {
         {isUrgent ? '🔥 Event is TODAY!' : isVerySoon ? '⚡ Event Coming Soon!' : 'Time Until Event'}
       </h3>
 
-      <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
         <div className="text-center min-w-0">
           <div className={cellClass}>
             <div className={valueClass}>{timeLeft.days}</div>
@@ -93,13 +91,6 @@ const EventCountdown: React.FC<EventCountdownProps> = ({ eventDate }) => {
           <div className={cellClass}>
             <div className={valueClass}>{timeLeft.minutes}</div>
             <div className={labelClass}>Min{timeLeft.minutes !== 1 ? 's' : ''}</div>
-          </div>
-        </div>
-
-        <div className="text-center min-w-0">
-          <div className={cellClass}>
-            <div className={valueClass}>{timeLeft.seconds}</div>
-            <div className={labelClass}>Sec{timeLeft.seconds !== 1 ? 's' : ''}</div>
           </div>
         </div>
       </div>
