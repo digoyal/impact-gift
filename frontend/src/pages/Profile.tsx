@@ -3,6 +3,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { UpdateUserProfileInput } from '../types';
 import { isAxiosError } from '../utils/errors';
+import CharityPageSetupCard from '../components/CharityPageSetupCard';
 
 const Profile = () => {
   const [loading, setLoading] = useState(false);
@@ -129,60 +130,11 @@ const Profile = () => {
               </p>
             </div>
 
-            {/* Charity Page Section */}
             <div className="border-t border-gray-200 pt-6">
-              <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-xl border border-accent-200 mb-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">💝 Your Charity Page</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Create a shareable page with your favorite charities. Share this instead of a gift registry for birthdays, holidays, or any occasion!
-                </p>
-
-                <div>
-                  <label htmlFor="charity_page_slug" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Charity Page URL
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">giftwithimpact.com/charity/</span>
-                    <input
-                      id="charity_page_slug"
-                      type="text"
-                      className="input flex-1"
-                      placeholder="charity-love"
-                      value={formData.charity_page_slug}
-                      onChange={(e) => setFormData({ ...formData, charity_page_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                      pattern="[a-z0-9-]+"
-                      minLength={3}
-                      maxLength={50}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Only lowercase letters, numbers, and hyphens. Min 3 characters.
-                  </p>
-                  {formData.charity_page_slug && (
-                    <div className="mt-3 p-3 bg-white rounded-lg border border-accent-200">
-                      <p className="text-xs text-gray-600 mb-1">Your shareable link:</p>
-                      <a
-                        href={`/charity/${formData.charity_page_slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-accent-600 hover:text-accent-700 font-medium break-all"
-                      >
-                        {window.location.origin}/charity/{formData.charity_page_slug}
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/charity/${formData.charity_page_slug}`);
-                          toast.success('Link copied!');
-                        }}
-                        className="ml-2 text-xs text-accent-600 hover:text-accent-700"
-                      >
-                        📋 Copy
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <CharityPageSetupCard
+                slug={formData.charity_page_slug}
+                onSlugChange={(charity_page_slug) => setFormData({ ...formData, charity_page_slug })}
+              />
             </div>
 
             <div>

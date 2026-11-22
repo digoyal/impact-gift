@@ -775,36 +775,10 @@ const Dashboard = () => {
         {activeTab === 'charity' && (
         <div className="mb-16 animate-fade-in" style={{ animationDelay: '100ms' }}>
           <p className="text-sm text-neutral-600 mb-6">{dashboardTabHelperText.charity}</p>
-          {!user?.charity_page_slug ? (
-            <div className="card-info text-center py-16 animate-fade-in max-w-3xl">
-              <svg
-                className="w-16 h-16 text-neutral-400 mx-auto mb-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-              <h2 className="text-heading-2 mb-3 text-neutral-900">No charity page yet</h2>
-              <p className="text-body-large text-neutral-600 mb-8 max-w-md mx-auto">
-                Set a custom URL in your profile to share favorite charities and receive donation pledges.
-              </p>
-              <Link to="/profile" className="btn btn-primary inline-flex">
-                Set up in Profile
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-8 max-w-3xl">
-              <CharityPageCard />
-              <FavoriteCharities />
-            </div>
-          )}
+          <div className="space-y-8 max-w-3xl">
+            <CharityPageCard />
+            {user?.charity_page_slug ? <FavoriteCharities /> : null}
+          </div>
         </div>
         )}
 
