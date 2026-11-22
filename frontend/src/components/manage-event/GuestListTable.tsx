@@ -16,23 +16,15 @@ function rsvpBadge(guest: Guest): { text: string; className: string } {
   }
 }
 
-function GuestStatusInline({ guest, organizer }: { guest: Guest; organizer: boolean }) {
+function GuestStatusInline({ guest }: { guest: Guest }) {
   const rsvp = rsvpBadge(guest);
-  const inviteClass = guest.invitation_sent
-    ? 'bg-emerald-50 text-emerald-800'
-    : 'bg-amber-50 text-amber-900';
 
   return (
-    <div className="inline-flex max-w-full items-center gap-1.5 whitespace-nowrap text-xs">
-      <span className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 font-medium leading-none ${rsvp.className}`}>
-        {rsvp.text}
-      </span>
-      {!organizer && (
-        <span className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 font-medium leading-none ${inviteClass}`}>
-          {guest.invitation_sent ? 'Invited' : 'Pending'}
-        </span>
-      )}
-    </div>
+    <span
+      className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-xs font-medium leading-none whitespace-nowrap ${rsvp.className}`}
+    >
+      {rsvp.text}
+    </span>
   );
 }
 
@@ -138,7 +130,7 @@ const GuestListTable = ({
                       />
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <GuestStatusInline guest={guest} organizer={organizer} />
+                      <GuestStatusInline guest={guest} />
                     </td>
                     <td className="px-4 py-3">
                       <AdditionalGuestsControl
@@ -191,7 +183,7 @@ const GuestListTable = ({
 
               const statusCell = (
                 <td className="px-4 py-3 align-top whitespace-nowrap">
-                  <GuestStatusInline guest={guest} organizer={organizer} />
+                  <GuestStatusInline guest={guest} />
                 </td>
               );
 
