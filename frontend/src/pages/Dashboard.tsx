@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import api from '../utils/api';
 import { parseLocalDate, formatEventTimeWithZone, isEventDatePast } from '../utils/dateUtils';
@@ -31,16 +31,28 @@ interface Invitation {
 
 type DashboardTab = 'events' | 'invitations';
 
+const dashboardCardActionBtn =
+  'btn btn-sm w-full !min-h-0 !py-1.5 px-3 text-xs font-medium whitespace-nowrap';
+
 interface DashboardEventCardProps {
   title: string;
   eventDate: string;
   startTime?: string;
   imageUrl?: string;
   hostLabel: string;
-  href: string;
+  manageHref: string;
   cancelled?: boolean;
   animationDelay?: number;
   badgeExtra?: ReactNode;
+  /** Invitation cards: entire card links to the event page (no selection/actions). */
+  navigateOnClick?: boolean;
+  eventPageHref?: string;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  showHostActions?: boolean;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+  actionsBusy?: boolean;
 }
 
 function DashboardEventCard({
@@ -49,23 +61,25 @@ function DashboardEventCard({
   startTime,
   imageUrl,
   hostLabel,
-  href,
+  manageHref,
   cancelled,
   animationDelay = 0,
   badgeExtra,
+  navigateOnClick = false,
+  eventPageHref,
+  selected = false,
+  onToggleSelect,
+  showHostActions = false,
+  onDuplicate,
+  onDelete,
+  actionsBusy = false,
 }: DashboardEventCardProps) {
   const timingLabel = isEventDatePast(eventDate, cancelled) ? 'Past' : 'Upcoming';
   const dateLine = format(parseLocalDate(eventDate), 'EEE MMM d, yyyy');
   const timeLine = startTime ? formatEventTimeWithZone(startTime, eventDate) : '';
 
-  return (
-    <Link
-      to={href}
-      className={`card-hover group flex gap-4 sm:gap-5 p-4 sm:p-5 animate-fade-in ${
-        cancelled ? 'opacity-90 border border-neutral-300 bg-neutral-50' : ''
-      }`}
-      style={{ animationDelay: `${animationDelay}ms` }}
-    >
+  const content = (
+    <>
       <div className="relative flex-shrink-0 w-20 sm:w-24 aspect-[3/4] rounded-lg overflow-hidden shadow-soft bg-neutral-100">
         {imageUrl ? (
           <img src={imageUrl} alt="" className="h-full w-full object-cover" />
@@ -92,7 +106,9 @@ function DashboardEventCard({
             className={`text-lg sm:text-xl font-bold leading-snug transition-colors ${
               cancelled
                 ? 'text-neutral-600 line-through decoration-neutral-400'
-                : 'text-neutral-900 group-hover:text-primary-600'
+                : selected
+                  ? 'text-primary-700'
+                  : 'text-neutral-900 group-hover:text-primary-600'
             }`}
           >
             {title}
@@ -108,7 +124,74 @@ function DashboardEventCard({
         {timeLine && <p className="text-sm text-neutral-700 mt-0.5">{timeLine}</p>}
         <p className="text-sm text-neutral-500 mt-2">{hostLabel}</p>
       </div>
-    </Link>
+
+      {selected && !navigateOnClick && (
+        <div
+          className="flex flex-col gap-1.5 justify-center shrink-0 pl-2 border-l border-neutral-200"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <Link to={manageHref} className={`${dashboardCardActionBtn} btn-primary text-center`}>
+            Manage
+          </Link>
+          {showHostActions && onDuplicate && (
+            <button
+              type="button"
+              className={`${dashboardCardActionBtn} btn-secondary`}
+              disabled={actionsBusy}
+              onClick={onDuplicate}
+            >
+              Duplicate
+            </button>
+          )}
+          {showHostActions && onDelete && (
+            <button
+              type="button"
+              className={`${dashboardCardActionBtn} btn-secondary text-red-700 hover:text-red-800 border-red-200 hover:border-red-300`}
+              disabled={actionsBusy}
+              onClick={onDelete}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  if (navigateOnClick && eventPageHref) {
+    return (
+      <Link
+        to={eventPageHref}
+        className={`card-hover group flex gap-4 sm:gap-5 p-4 sm:p-5 animate-fade-in ${
+          cancelled ? 'opacity-90 border border-neutral-300 bg-neutral-50' : ''
+        }`}
+        style={{ animationDelay: `${animationDelay}ms` }}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={onToggleSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggleSelect?.();
+        }
+      }}
+      className={`card-hover group flex gap-4 sm:gap-5 p-4 sm:p-5 animate-fade-in cursor-pointer transition-shadow ${
+        cancelled ? 'opacity-90 border border-neutral-300 bg-neutral-50' : ''
+      } ${selected ? 'ring-2 ring-primary-500 ring-offset-1 shadow-md' : ''}`}
+      style={{ animationDelay: `${animationDelay}ms` }}
+    >
+      {content}
+    </div>
   );
 }
 
@@ -217,6 +300,7 @@ function dashboardPillButtonClass(active: boolean) {
 }
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -228,6 +312,8 @@ const Dashboard = () => {
   const [commitmentsLoading, setCommitmentsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('events');
   const [timingFilter, setTimingFilter] = useState<Set<EventTimingFilter>>(defaultTimingFilters);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [eventActionBusy, setEventActionBusy] = useState(false);
 
   const filteredEvents = useMemo(
     () => events.filter((event) => matchesEventTimingFilter(event.event_date, timingFilter, event.cancelled)),
@@ -238,6 +324,59 @@ const Dashboard = () => {
     () => invitations.filter((inv) => matchesEventTimingFilter(inv.event_date, timingFilter, inv.cancelled)),
     [invitations, timingFilter]
   );
+
+  const toggleSelectEvent = (eventId: number) => {
+    setSelectedEventId((current) => (current === eventId ? null : eventId));
+  };
+
+  const handleDuplicateEvent = async (event: Event) => {
+    if (
+      !window.confirm(
+        'Are you sure you want to duplicate this event? This will create a copy with all settings, charities, and co-hosts.'
+      )
+    ) {
+      return;
+    }
+
+    setEventActionBusy(true);
+    try {
+      const response = await api.post(`/events/${event.id}/duplicate`);
+      toast.success('Event duplicated successfully!');
+      setSelectedEventId(null);
+      await fetchDashboardSummary();
+      setTimeout(() => {
+        navigate(`/event/${response.data.event.slug}/manage`);
+      }, 500);
+    } catch (error: unknown) {
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      toast.error((data?.error as string) || 'Failed to duplicate event');
+    } finally {
+      setEventActionBusy(false);
+    }
+  };
+
+  const handleDeleteEvent = async (event: Event) => {
+    if (
+      !window.confirm(
+        'Delete this event? It will be removed from your dashboard and hidden from guests. This cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    setEventActionBusy(true);
+    try {
+      await api.put(`/events/${event.slug}`, { is_active: false });
+      toast.success('Event deleted');
+      setSelectedEventId(null);
+      setEvents((prev) => prev.filter((e) => e.id !== event.id));
+    } catch (error: unknown) {
+      const data = isAxiosError(error) ? (error.response?.data as Record<string, unknown> | undefined) : undefined;
+      toast.error((data?.error as string) || 'Failed to delete event');
+    } finally {
+      setEventActionBusy(false);
+    }
+  };
 
   const showTimingFilters =
     (activeTab === 'events' && !eventsLoading && !eventsError && events.length > 0) ||
@@ -397,7 +536,12 @@ const Dashboard = () => {
                   type="button"
                   role="tab"
                   aria-selected={activeTab === tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    if (tab === 'invitations') {
+                      setSelectedEventId(null);
+                    }
+                  }}
                   className={`py-2.5 px-1 sm:px-1.5 border-b-2 font-medium text-sm whitespace-nowrap ${
                     activeTab === tab
                       ? 'border-primary-600 text-primary-600'
@@ -456,7 +600,9 @@ const Dashboard = () => {
                       startTime={invitation.start_time}
                       imageUrl={invitation.event_image_url}
                       hostLabel={`Hosted by ${invitation.host_first_name} ${invitation.host_last_name}`.trim()}
-                      href={`/event/${invitation.event_slug}?email=${encodeURIComponent(invitation.email)}`}
+                      manageHref={`/event/${invitation.event_slug}?email=${encodeURIComponent(invitation.email)}`}
+                      navigateOnClick
+                      eventPageHref={`/event/${invitation.event_slug}?email=${encodeURIComponent(invitation.email)}`}
                       cancelled={invitation.cancelled}
                       animationDelay={index * 50}
                     />
@@ -527,10 +673,18 @@ const Dashboard = () => {
                       eventDate={event.event_date}
                       startTime={event.start_time}
                       imageUrl={event.event_image_url}
-                      hostLabel="Hosted by you"
-                      href={`/event/${event.slug}/manage`}
+                      hostLabel={event.user_role === 'cohost' ? 'You are co-hosting' : 'Hosted by you'}
+                      manageHref={`/event/${event.slug}/manage`}
                       cancelled={event.cancelled}
                       animationDelay={index * 50}
+                      selected={selectedEventId === event.id}
+                      onToggleSelect={() => toggleSelectEvent(event.id)}
+                      showHostActions={event.user_role === 'owner'}
+                      onDuplicate={
+                        event.user_role === 'owner' ? () => handleDuplicateEvent(event) : undefined
+                      }
+                      onDelete={event.user_role === 'owner' ? () => handleDeleteEvent(event) : undefined}
+                      actionsBusy={eventActionBusy}
                       badgeExtra={
                         event.user_role === 'cohost' ? (
                           <span className="badge badge-primary text-xs flex-shrink-0">Co-Host</span>
