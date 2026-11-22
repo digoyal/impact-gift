@@ -66,11 +66,6 @@ const PotluckItemsTable = ({
                       {item.guest_email}
                     </span>
                   )}
-                  {variant === 'claimed' && item.claimed_at && (
-                    <span className="block text-xs text-gray-500">
-                      {new Date(item.claimed_at).toLocaleDateString()}
-                    </span>
-                  )}
                 </td>
               )}
               <td className="px-2 py-1.5 text-xs text-gray-600 max-w-[10rem] truncate italic" title={item.notes || undefined}>
