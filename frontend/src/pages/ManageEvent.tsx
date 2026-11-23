@@ -12,7 +12,7 @@ import RSVPSummaryBar from '../components/manage-event/RSVPSummaryBar';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import GuestsTab from '../components/manage-event/GuestsTab';
 import SettingsTab from '../components/manage-event/SettingsTab';
-import EventImageSelector from '../components/EventImageSelector';
+import DetailsTab from '../components/manage-event/DetailsTab';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { toastEmailSendError, toastEmailSendResult } from '../utils/emailSendFeedback';
 import { eventHasSelectedCharity, isImpactGiftEnabled } from '../utils/impactGift';
@@ -946,184 +946,14 @@ const ManageEvent = () => {
 
       {/* Event Details Tab */}
       {activeTab === 'details' && (
-        <div className="card">
-          <form onSubmit={handleSaveDetails} className="space-y-6">
-            {/* Event Image */}
-            <div>
-              <EventImageSelector
-                currentImageUrl={eventImage.url}
-                onImageUploaded={(url, publicId) => setEventImage({ url, publicId })}
-                libraryCategoryHeader={
-                  <div>
-                    <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
-                      Event Title *
-                    </label>
-                    <input
-                      id="title"
-                      type="text"
-                      required
-                      className="input"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    />
-                  </div>
-                }
-              />
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
-                About This Event
-              </label>
-              <textarea
-                id="description"
-                className="input"
-                rows={4}
-                placeholder="Tell your guests about your event..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-
-            {/* Date & Time */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="min-w-0">
-                <label htmlFor="event_date" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Start Date *
-                </label>
-                <input
-                  id="event_date"
-                  type="date"
-                  required
-                  className="input"
-                  value={formData.event_date}
-                  onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-                />
-              </div>
-
-              <div className="min-w-0">
-                <label htmlFor="start_time" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Start Time *
-                </label>
-                <input
-                  id="start_time"
-                  type="time"
-                  required
-                  className="input"
-                  value={formData.start_time}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                />
-              </div>
-
-              <div className="min-w-0">
-                <label htmlFor="end_time" className="block text-sm font-semibold text-gray-700 mb-1">
-                  End Time (Optional)
-                </label>
-                <input
-                  id="end_time"
-                  type="time"
-                  className="input"
-                  value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Location */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="venue_name" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Venue Name *
-                </label>
-                <input
-                  id="venue_name"
-                  type="text"
-                  required
-                  className="input"
-                  placeholder="e.g., Our Home, Central Park"
-                  value={formData.venue_name}
-                  onChange={(e) => setFormData({ ...formData, venue_name: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Address (Optional)
-                </label>
-                <input
-                  id="address"
-                  type="text"
-                  className="input"
-                  placeholder="123 Main St, San Francisco, CA 94102"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Host Info */}
-            <div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div className="min-w-0">
-                  <label htmlFor="host_name" className="block text-sm font-semibold text-gray-700 mb-1">
-                    Host Name *
-                  </label>
-                  <input
-                    id="host_name"
-                    type="text"
-                    required
-                    className="input"
-                    placeholder="Your name"
-                    value={formData.host_name}
-                    onChange={(e) => setFormData({ ...formData, host_name: e.target.value })}
-                  />
-                </div>
-
-                <div className="min-w-0">
-                  <label htmlFor="host_phone" className="block text-sm font-semibold text-gray-700 mb-1">
-                    Host Phone *
-                  </label>
-                  <input
-                    id="host_phone"
-                    type="tel"
-                    required
-                    className="input"
-                    placeholder="(555) 123-4567"
-                    value={formData.host_phone}
-                    onChange={(e) => setFormData({ ...formData, host_phone: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-4">
-                <label htmlFor="rsvp_deadline" className="block text-sm font-semibold text-gray-700 mb-1">
-                  RSVP Deadline (Optional)
-                </label>
-                <input
-                  id="rsvp_deadline"
-                  type="date"
-                  className="input"
-                  value={formData.rsvp_deadline}
-                  onChange={(e) => setFormData({ ...formData, rsvp_deadline: e.target.value })}
-                />
-              </div>
-
-            </div>
-
-            {/* Save Button */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                disabled={saveLoading}
-                className="btn btn-primary"
-              >
-                {saveLoading ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <DetailsTab
+          formData={formData}
+          onFormDataChange={setFormData}
+          eventImage={eventImage}
+          onEventImageChange={(url, publicId) => setEventImage({ url, publicId })}
+          onSubmit={handleSaveDetails}
+          saveLoading={saveLoading}
+        />
       )}
 
       {activeTab === 'settings' && (

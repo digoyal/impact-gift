@@ -1,20 +1,12 @@
-import EventImageSelector from '../EventImageSelector';
+import type { FormEvent } from 'react';
+import EventDetailsForm, { type EventDetailsFormFields } from '../EventDetailsForm';
 
-interface FormData {
-  title: string;
-  description: string;
+interface FormData extends EventDetailsFormFields {
   event_type: string;
-  event_date: string;
-  start_time: string;
-  end_time: string;
-  venue_name: string;
-  address: string;
-  host_name: string;
-  host_phone: string;
-  rsvp_deadline: string;
   dress_code: string;
   show_guest_list: boolean;
   potluck_enabled: boolean;
+  allow_additional_guests: boolean;
 }
 
 interface DetailsTabProps {
@@ -22,9 +14,22 @@ interface DetailsTabProps {
   onFormDataChange: (data: FormData) => void;
   eventImage: { url: string; publicId: string };
   onEventImageChange: (url: string, publicId: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: FormEvent) => void;
   saveLoading: boolean;
 }
+
+const pickDetailsFields = (data: FormData): EventDetailsFormFields => ({
+  title: data.title,
+  description: data.description,
+  event_date: data.event_date,
+  start_time: data.start_time,
+  end_time: data.end_time,
+  venue_name: data.venue_name,
+  address: data.address,
+  host_name: data.host_name,
+  host_phone: data.host_phone,
+  rsvp_deadline: data.rsvp_deadline,
+});
 
 const DetailsTab = ({
   formData,
@@ -33,196 +38,24 @@ const DetailsTab = ({
   onEventImageChange,
   onSubmit,
   saveLoading,
-}: DetailsTabProps) => {
-  const handleChange = (field: keyof FormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = e.target.type === 'checkbox'
-      ? (e.target as HTMLInputElement).checked
-      : e.target.value;
-    onFormDataChange({ ...formData, [field]: value });
-  };
+}: DetailsTabProps) => (
+  <div className="card">
+    <form onSubmit={onSubmit} className="space-y-6">
+      <EventDetailsForm
+        mode="edit"
+        formData={pickDetailsFields(formData)}
+        onFormDataChange={(fields) => onFormDataChange({ ...formData, ...fields })}
+        eventImage={eventImage}
+        onEventImageChange={onEventImageChange}
+      />
 
-  return (
-    <div className="card">
-      <form onSubmit={onSubmit} className="space-y-6">
-        {/* Event Image */}
-        <div>
-          <EventImageSelector
-            currentImageUrl={eventImage.url}
-            onImageUploaded={onEventImageChange}
-            libraryCategoryHeader={
-              <div>
-                <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Event Title *
-                </label>
-                <input
-                  id="title"
-                  type="text"
-                  required
-                  className="input"
-                  value={formData.title}
-                  onChange={handleChange('title')}
-                />
-              </div>
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
-            About This Event
-          </label>
-          <textarea
-            id="description"
-            className="input"
-            rows={4}
-            placeholder="Tell your guests about your event..."
-            value={formData.description}
-            onChange={handleChange('description')}
-          />
-        </div>
-
-        {/* Date & Time */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          <div className="min-w-0">
-            <label htmlFor="event_date" className="block text-sm font-semibold text-gray-700 mb-1">
-              Start Date *
-            </label>
-            <input
-              id="event_date"
-              type="date"
-              required
-              className="input"
-              value={formData.event_date}
-              onChange={handleChange('event_date')}
-            />
-          </div>
-
-          <div className="min-w-0">
-            <label htmlFor="start_time" className="block text-sm font-semibold text-gray-700 mb-1">
-              Start Time *
-            </label>
-            <input
-              id="start_time"
-              type="time"
-              required
-              className="input"
-              value={formData.start_time}
-              onChange={handleChange('start_time')}
-            />
-          </div>
-
-          <div className="min-w-0">
-            <label htmlFor="end_time" className="block text-sm font-semibold text-gray-700 mb-1">
-              End Time (Optional)
-            </label>
-            <input
-              id="end_time"
-              type="time"
-              className="input"
-              value={formData.end_time}
-              onChange={handleChange('end_time')}
-            />
-          </div>
-        </div>
-
-        {/* Location */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="venue_name" className="block text-sm font-semibold text-gray-700 mb-1">
-              Venue Name *
-            </label>
-            <input
-              id="venue_name"
-              type="text"
-              required
-              className="input"
-              placeholder="e.g., Our Home, Central Park"
-              value={formData.venue_name}
-              onChange={handleChange('venue_name')}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-1">
-              Address (Optional)
-            </label>
-            <input
-              id="address"
-              type="text"
-              className="input"
-              placeholder="123 Main St, San Francisco, CA 94102"
-              value={formData.address}
-              onChange={handleChange('address')}
-            />
-          </div>
-        </div>
-
-        {/* Host Info */}
-        <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="min-w-0">
-              <label htmlFor="host_name" className="block text-sm font-semibold text-gray-700 mb-1">
-                Host Name *
-              </label>
-              <input
-                id="host_name"
-                type="text"
-                required
-                className="input"
-                placeholder="Your name"
-                value={formData.host_name}
-                onChange={handleChange('host_name')}
-              />
-            </div>
-
-            <div className="min-w-0">
-              <label htmlFor="host_phone" className="block text-sm font-semibold text-gray-700 mb-1">
-                Host Phone *
-              </label>
-              <input
-                id="host_phone"
-                type="tel"
-                required
-                className="input"
-                placeholder="(555) 123-4567"
-                value={formData.host_phone}
-                onChange={handleChange('host_phone')}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-4">
-            <label htmlFor="rsvp_deadline" className="block text-sm font-semibold text-gray-700 mb-1">
-              RSVP Deadline (Optional)
-            </label>
-            <input
-              id="rsvp_deadline"
-              type="date"
-              className="input"
-              value={formData.rsvp_deadline}
-              onChange={handleChange('rsvp_deadline')}
-            />
-          </div>
-
-        </div>
-
-        {/* Save Button */}
-        <div className="flex gap-3 pt-4">
-          <button
-            type="submit"
-            disabled={saveLoading}
-            className="btn btn-primary"
-          >
-            {saveLoading ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-};
+      <div className="flex gap-3 pt-4">
+        <button type="submit" disabled={saveLoading} className="btn btn-primary">
+          {saveLoading ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+    </form>
+  </div>
+);
 
 export default DetailsTab;
