@@ -949,11 +949,10 @@ const ManageEvent = () => {
         <div className="card">
           <form onSubmit={handleSaveDetails} className="space-y-6">
             {/* Event Image */}
-            <div>
+            <div className="-mt-1 sm:-mt-2">
               <EventImageSelector
                 currentImageUrl={eventImage.url}
                 onImageUploaded={(url, publicId) => setEventImage({ url, publicId })}
-                label=""
               />
             </div>
 

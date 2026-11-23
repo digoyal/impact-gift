@@ -47,11 +47,10 @@ const DetailsTab = ({
     <div className="card">
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Event Image */}
-        <div>
+        <div className="-mt-1 sm:-mt-2">
           <EventImageSelector
             currentImageUrl={eventImage.url}
             onImageUploaded={onEventImageChange}
-            label=""
           />
         </div>
 

@@ -344,8 +344,8 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-3">
-        {label || 'Event Image (Optional)'}
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label === undefined || label === '' ? 'Event Image' : label}
       </label>
       {helpText && <p className="text-xs text-gray-500 mb-3">{helpText}</p>}
 

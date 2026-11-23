@@ -111,7 +111,7 @@ const CreateEvent = () => {
           <EventImageSelector
             onImageUploaded={(url, publicId) => setEventImage({ url, publicId })}
             currentImageUrl={eventImage.url}
-            label="Event Image (Optional)"
+            label="Event Image"
             helpText="Choose from our library of beautiful event images or upload your own photo!"
           />
 
