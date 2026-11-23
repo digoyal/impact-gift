@@ -52,7 +52,7 @@ const EventImageWithCaption = ({
       {editable && (
         <div className="space-y-2">
           <p className="text-xs text-gray-500">
-            Type in the box on the image, use the top bar to drag it, and adjust font and size below.
+            Type in the box on the image, drag the top bar to move, pull the bottom-right corner to resize, and set font and size below.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="min-w-0">
