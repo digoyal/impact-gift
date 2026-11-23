@@ -1064,8 +1064,8 @@ const ManageEvent = () => {
             {/* Host Info */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Host Information</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="min-w-0">
                   <label htmlFor="host_name" className="block text-sm font-medium text-gray-700 mb-1">
                     Host Name *
                   </label>
@@ -1080,7 +1080,7 @@ const ManageEvent = () => {
                   />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <label htmlFor="host_phone" className="block text-sm font-medium text-gray-700 mb-1">
                     Host Phone *
                   </label>
