@@ -74,7 +74,7 @@ const IMAGE_CATEGORIES: ImageCategory[] = [
     name: 'Anniversary',
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1522673607212-f2f15e0a71d7?w=800',
+        url: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=800',
         publicId: 'preset_anniversary_roses',
         name: 'Anniversary Roses'
       },
@@ -89,7 +89,7 @@ const IMAGE_CATEGORIES: ImageCategory[] = [
         name: 'Romantic Celebration'
       },
       {
-        url: 'https://images.unsplash.com/photo-1470072768013-bf9532177525?w=800',
+        url: 'https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=800',
         publicId: 'preset_anniversary_hearts',
         name: 'Hearts & Love'
       }
@@ -104,7 +104,7 @@ const IMAGE_CATEGORIES: ImageCategory[] = [
         name: 'Graduation Cap'
       },
       {
-        url: 'https://images.unsplash.com/photo-1627556704283-54b35dc57b7a?w=800',
+        url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
         publicId: 'preset_graduation_celebration',
         name: 'Graduation Celebration'
       },
@@ -239,7 +239,7 @@ const IMAGE_CATEGORIES: ImageCategory[] = [
         name: 'Party Balloons'
       },
       {
-        url: 'https://images.unsplash.com/photo-1486711681588-8936ddb2071c?w=800',
+        url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800',
         publicId: 'preset_celebration_fireworks',
         name: 'Celebration Fireworks'
       }
