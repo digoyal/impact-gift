@@ -1097,10 +1097,7 @@ const ManageEvent = () => {
               </div>
             </div>
 
-            {/* Additional Details */}
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Details</h3>
-
               <div className="mb-4">
                 <label htmlFor="rsvp_deadline" className="block text-sm font-medium text-gray-700 mb-1">
                   RSVP Deadline (Optional)
