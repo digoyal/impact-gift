@@ -934,7 +934,7 @@ const ManageEvent = () => {
                 </button>
                 {index < manageTabs.length - 1 && (
                   <span
-                    className="w-px h-5 shrink-0 self-center bg-gray-300"
+                    className="w-px h-5 shrink-0 self-center bg-gray-400"
                     aria-hidden="true"
                   />
                 )}
