@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 
@@ -7,6 +7,8 @@ interface EventImageSelectorProps {
   currentImageUrl?: string;
   label?: string;
   helpText?: string;
+  /** When set, library Category select shares a row with this content (e.g. Event Title on Details). */
+  libraryCategoryHeader?: ReactNode;
 }
 
 interface ImageCategory {
@@ -251,7 +253,13 @@ const LIBRARY_PRESETS = IMAGE_CATEGORIES.flatMap((category) =>
   category.images.map((image) => ({ ...image, category: category.name }))
 );
 
-const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText }: EventImageSelectorProps) => {
+const EventImageSelector = ({
+  onImageUploaded,
+  currentImageUrl,
+  label,
+  helpText,
+  libraryCategoryHeader,
+}: EventImageSelectorProps) => {
   const [activeTab, setActiveTab] = useState<'library' | 'upload'>('library');
   const [selectedCategory, setSelectedCategory] = useState<string>(IMAGE_CATEGORIES[0].name);
   const [uploading, setUploading] = useState(false);
@@ -378,21 +386,46 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
       {/* Library Tab */}
       {activeTab === 'library' && (
         <div>
-          <label htmlFor="event-image-category" className="block text-sm font-semibold text-gray-700 mb-1">
-            Category
-          </label>
-          <select
-            id="event-image-category"
-            className="input w-full mb-4"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            {IMAGE_CATEGORIES.map((category) => (
-              <option key={category.name} value={category.name}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+          {libraryCategoryHeader ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 items-end">
+              <div className="min-w-0">{libraryCategoryHeader}</div>
+              <div className="min-w-0">
+                <label htmlFor="event-image-category" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Category
+                </label>
+                <select
+                  id="event-image-category"
+                  className="input w-full"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  {IMAGE_CATEGORIES.map((category) => (
+                    <option key={category.name} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <>
+              <label htmlFor="event-image-category" className="block text-sm font-semibold text-gray-700 mb-1">
+                Category
+              </label>
+              <select
+                id="event-image-category"
+                className="input w-full mb-4"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                {IMAGE_CATEGORIES.map((category) => (
+                  <option key={category.name} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {IMAGE_CATEGORIES.find((cat) => cat.name === selectedCategory)?.images.map((image) => (
@@ -434,6 +467,9 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
       {/* Upload Tab */}
       {activeTab === 'upload' && (
         <div>
+          {libraryCategoryHeader && (
+            <div className="mb-4 min-w-0">{libraryCategoryHeader}</div>
+          )}
           {!preview ? (
             <div
               onClick={() => fileInputRef.current?.click()}

@@ -953,21 +953,21 @@ const ManageEvent = () => {
               <EventImageSelector
                 currentImageUrl={eventImage.url}
                 onImageUploaded={(url, publicId) => setEventImage({ url, publicId })}
-              />
-            </div>
-
-            {/* Basic Info */}
-            <div>
-              <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
-                Event Title *
-              </label>
-              <input
-                id="title"
-                type="text"
-                required
-                className="input"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                libraryCategoryHeader={
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
+                      Event Title *
+                    </label>
+                    <input
+                      id="title"
+                      type="text"
+                      required
+                      className="input"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    />
+                  </div>
+                }
               />
             </div>
 

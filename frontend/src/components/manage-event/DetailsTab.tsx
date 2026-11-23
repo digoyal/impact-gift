@@ -51,21 +51,21 @@ const DetailsTab = ({
           <EventImageSelector
             currentImageUrl={eventImage.url}
             onImageUploaded={onEventImageChange}
-          />
-        </div>
-
-        {/* Basic Info */}
-        <div>
-          <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
-            Event Title *
-          </label>
-          <input
-            id="title"
-            type="text"
-            required
-            className="input"
-            value={formData.title}
-            onChange={handleChange('title')}
+            libraryCategoryHeader={
+              <div>
+                <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Event Title *
+                </label>
+                <input
+                  id="title"
+                  type="text"
+                  required
+                  className="input"
+                  value={formData.title}
+                  onChange={handleChange('title')}
+                />
+              </div>
+            }
           />
         </div>
 
