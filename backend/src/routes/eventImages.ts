@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { upload, deleteImage, fileToUploadMeta } from '../services/uploadService';
 import { query } from '../database/db';
+import { normalizeEventImageCaption } from '../utils/eventImageCaption';
 
 const router = Router();
 
@@ -38,7 +39,9 @@ router.post('/upload', authenticate, upload.single('image'), async (req: AuthReq
 router.put('/event/:eventId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { eventId } = req.params;
-    const { imageUrl, publicId } = req.body;
+    const { imageUrl, publicId, caption: captionRaw } = req.body;
+    const updateCaption = Object.prototype.hasOwnProperty.call(req.body, 'caption');
+    const caption = updateCaption ? normalizeEventImageCaption(captionRaw) : undefined;
     const userId = req.user!.id;
 
     if (!imageUrl) {
@@ -58,12 +61,21 @@ router.put('/event/:eventId', authenticate, async (req: AuthRequest, res: Respon
     const oldPublicId = eventCheck.rows[0].event_image_public_id;
 
     // Update event with new image
-    await query(
-      `UPDATE events
-       SET event_image_url = $1, event_image_public_id = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3`,
-      [imageUrl, publicId || null, eventId]
-    );
+    if (updateCaption) {
+      await query(
+        `UPDATE events
+         SET event_image_url = $1, event_image_public_id = $2, event_image_caption = $3::jsonb, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $4`,
+        [imageUrl, publicId || null, caption ? JSON.stringify(caption) : null, eventId]
+      );
+    } else {
+      await query(
+        `UPDATE events
+         SET event_image_url = $1, event_image_public_id = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $3`,
+        [imageUrl, publicId || null, eventId]
+      );
+    }
 
     // Delete old stored file when applicable
     if (oldPublicId) {
@@ -106,7 +118,7 @@ router.delete('/event/:eventId', authenticate, async (req: AuthRequest, res: Res
     // Remove image from event
     await query(
       `UPDATE events
-       SET event_image_url = NULL, event_image_public_id = NULL, updated_at = CURRENT_TIMESTAMP
+       SET event_image_url = NULL, event_image_public_id = NULL, event_image_caption = NULL, updated_at = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [eventId]
     );

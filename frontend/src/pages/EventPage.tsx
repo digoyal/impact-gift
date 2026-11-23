@@ -15,6 +15,8 @@ import EventPhotosGallery, { EventPhoto } from '../components/EventPhotosGallery
 import { useAuth } from '../contexts/AuthContext';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { resolveMediaUrl } from '../utils/mediaUrl';
+import EventImageCaptionOverlay from '../components/EventImageCaptionOverlay';
+import { parseEventImageCaption } from '../utils/eventImageCaption';
 
 const EventPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -128,6 +130,7 @@ const EventPage = () => {
   const shareTitle = `You're invited to ${event.title}`;
   const shareDescription = `${event.first_name} ${event.last_name} invited you to ${event.title}${event.event_date ? ` on ${format(parseLocalDate(event.event_date), 'MMMM dd, yyyy')}` : ''}. RSVP and view event details.`;
   const heroImageUrl = resolveMediaUrl(event.event_image_url);
+  const heroCaption = parseEventImageCaption(event.event_image_caption);
 
   return (
     <>
@@ -179,6 +182,11 @@ const EventPage = () => {
             className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/15"
             aria-hidden
           />
+          {heroCaption && (
+            <div className="absolute inset-0 z-[1]">
+              <EventImageCaptionOverlay caption={heroCaption} />
+            </div>
+          )}
         </div>
       )}
 

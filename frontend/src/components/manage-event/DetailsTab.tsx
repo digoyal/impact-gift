@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react';
 import EventDetailsForm, { type EventDetailsFormFields } from '../EventDetailsForm';
+import type { EventImageValue } from '../../utils/eventImageCaption';
 
 interface FormData extends EventDetailsFormFields {
   event_type: string;
@@ -12,8 +13,8 @@ interface FormData extends EventDetailsFormFields {
 interface DetailsTabProps {
   formData: FormData;
   onFormDataChange: (data: FormData) => void;
-  eventImage: { url: string; publicId: string };
-  onEventImageChange: (url: string, publicId: string) => void;
+  eventImage: EventImageValue;
+  onEventImageChange: (image: EventImageValue) => void;
   onSubmit: (e: FormEvent) => void;
   saveLoading: boolean;
 }

@@ -1,5 +1,6 @@
 import type { ChangeEvent, ReactNode } from 'react';
 import EventImageSelector from './EventImageSelector';
+import type { EventImageCaption, EventImageValue } from '../utils/eventImageCaption';
 
 export interface EventDetailsFormFields {
   title: string;
@@ -22,8 +23,8 @@ interface EventDetailsFormProps {
   mode: EventDetailsFormMode;
   formData: EventDetailsFormFields;
   onFormDataChange: (data: EventDetailsFormFields) => void;
-  eventImage: { url: string; publicId: string };
-  onEventImageChange: (url: string, publicId: string) => void;
+  eventImage: EventImageValue;
+  onEventImageChange: (image: EventImageValue) => void;
   /** Shown under Event Image on create only */
   eventImageHelpText?: string;
   /** Optional hint below RSVP deadline (create page) */
@@ -67,7 +68,13 @@ const EventDetailsForm = ({
       <div>
         <EventImageSelector
           currentImageUrl={eventImage.url}
-          onImageUploaded={onEventImageChange}
+          onImageUploaded={(url, publicId) =>
+            onEventImageChange({ ...eventImage, url, publicId })
+          }
+          imageCaption={eventImage.caption}
+          onImageCaptionChange={(caption: EventImageCaption) =>
+            onEventImageChange({ ...eventImage, caption })
+          }
           helpText={eventImageHelpText}
           libraryCategoryHeader={titleField}
         />

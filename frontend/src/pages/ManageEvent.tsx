@@ -22,6 +22,13 @@ import {
   isInvitableGuest,
 } from '../utils/eventOrganizerGuest';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  captionForApi,
+  createEmptyEventImage,
+  DEFAULT_EVENT_IMAGE_CAPTION,
+  parseEventImageCaption,
+  type EventImageValue,
+} from '../utils/eventImageCaption';
 
 function SettingsGearIcon({ className }: { className?: string }) {
   return (
@@ -150,7 +157,7 @@ const ManageEvent = () => {
     allow_additional_guests: true,
     potluck_enabled: false
   });
-  const [eventImage, setEventImage] = useState<{ url: string; publicId: string }>({ url: '', publicId: '' });
+  const [eventImage, setEventImage] = useState<EventImageValue>(createEmptyEventImage());
   const [attirePhotos, setAttirePhotos] = useState<EventPhoto[]>([]);
   const [saveLoading, setSaveLoading] = useState(false);
 
@@ -308,7 +315,11 @@ const ManageEvent = () => {
       if (eventRes.data.event_image_url) {
         setEventImage({
           url: eventRes.data.event_image_url,
-          publicId: eventRes.data.event_image_public_id || ''
+          publicId: eventRes.data.event_image_public_id || '',
+          caption:
+            parseEventImageCaption(eventRes.data.event_image_caption) ?? {
+              ...DEFAULT_EVENT_IMAGE_CAPTION,
+            },
         });
       }
     } catch (error: unknown) {
@@ -721,11 +732,12 @@ const ManageEvent = () => {
 
       await api.put(`/events/${slug}`, eventData);
 
-      if (eventImage.url && eventImage.url !== event.event_image_url) {
+      if (eventImage.url) {
         try {
           await api.put(`/event-images/event/${event.id}`, {
             imageUrl: eventImage.url,
             publicId: eventImage.publicId,
+            caption: captionForApi(eventImage.caption),
           });
         } catch (imgError) {
           console.error('Failed to save event image:', imgError);
@@ -950,7 +962,7 @@ const ManageEvent = () => {
           formData={formData}
           onFormDataChange={setFormData}
           eventImage={eventImage}
-          onEventImageChange={(url, publicId) => setEventImage({ url, publicId })}
+          onEventImageChange={setEventImage}
           onSubmit={handleSaveDetails}
           saveLoading={saveLoading}
         />

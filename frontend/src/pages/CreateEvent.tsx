@@ -4,11 +4,16 @@ import api from '../utils/api';
 import { CreateEventInput } from '../types';
 import toast from 'react-hot-toast';
 import EventDetailsForm, { type EventDetailsFormFields } from '../components/EventDetailsForm';
+import {
+  captionForApi,
+  createEmptyEventImage,
+  type EventImageValue,
+} from '../utils/eventImageCaption';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 
 const CreateEvent = () => {
   const [loading, setLoading] = useState(false);
-  const [eventImage, setEventImage] = useState<{ url: string; publicId: string }>({ url: '', publicId: '' });
+  const [eventImage, setEventImage] = useState<EventImageValue>(createEmptyEventImage());
   const [formData, setFormData] = useState<
     EventDetailsFormFields & { event_type: string }
   >({
@@ -46,6 +51,7 @@ const CreateEvent = () => {
           await api.put(`/event-images/event/${eventId}`, {
             imageUrl: eventImage.url,
             publicId: eventImage.publicId,
+            caption: captionForApi(eventImage.caption),
           });
         } catch (imgError) {
           console.error('Failed to save event image:', imgError);
@@ -84,7 +90,7 @@ const CreateEvent = () => {
             formData={formData}
             onFormDataChange={(fields) => setFormData((prev) => ({ ...prev, ...fields }))}
             eventImage={eventImage}
-            onEventImageChange={(url, publicId) => setEventImage({ url, publicId })}
+            onEventImageChange={setEventImage}
             eventImageHelpText="Choose from our library of beautiful event images or upload your own photo!"
             rsvpDeadlineHint={
               <p className="text-xs text-gray-500 mt-1">Set a date by which guests should respond</p>

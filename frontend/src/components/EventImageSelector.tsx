@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import EventImageWithCaption from './EventImageWithCaption';
+import {
+  DEFAULT_EVENT_IMAGE_CAPTION,
+  type EventImageCaption,
+} from '../utils/eventImageCaption';
 
 interface EventImageSelectorProps {
   onImageUploaded: (imageUrl: string, publicId: string) => void;
@@ -9,6 +14,8 @@ interface EventImageSelectorProps {
   helpText?: string;
   /** When set, library Category select shares a row with this content (e.g. Event Title on Details). */
   libraryCategoryHeader?: ReactNode;
+  imageCaption?: EventImageCaption | null;
+  onImageCaptionChange?: (caption: EventImageCaption) => void;
 }
 
 interface ImageCategory {
@@ -259,7 +266,10 @@ const EventImageSelector = ({
   label,
   helpText,
   libraryCategoryHeader,
+  imageCaption,
+  onImageCaptionChange,
 }: EventImageSelectorProps) => {
+  const caption = imageCaption ?? DEFAULT_EVENT_IMAGE_CAPTION;
   const [activeTab, setActiveTab] = useState<'library' | 'upload'>('library');
   const [selectedCategory, setSelectedCategory] = useState<string>(IMAGE_CATEGORIES[0].name);
   const [uploading, setUploading] = useState(false);
@@ -345,10 +355,24 @@ const EventImageSelector = ({
     setPreview(null);
     setSelectedPresetId(null);
     onImageUploaded('', '');
+    onImageCaptionChange?.({ ...DEFAULT_EVENT_IMAGE_CAPTION });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
+  const removeImageButton = (
+    <button
+      type="button"
+      onClick={handleRemoveImage}
+      className="absolute top-2 right-2 z-10 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors"
+      aria-label="Remove image"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  );
 
   const categorySelect = (idSuffix = '') => (
     <>
@@ -476,22 +500,16 @@ const EventImageSelector = ({
               <p className="mt-1 text-xs text-gray-500">PNG, JPG up to 5MB</p>
             </div>
           ) : (
-            <div className="relative">
-              <img
-                src={preview}
-                alt="Preview"
-                className="w-full h-64 object-cover rounded-lg"
-              />
-              <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+            <EventImageWithCaption
+              imageUrl={preview}
+              alt="Preview"
+              previewClassName="relative w-full overflow-hidden rounded-lg bg-neutral-100"
+              imageClassName="w-full h-64 object-cover rounded-lg"
+              caption={caption}
+              onCaptionChange={onImageCaptionChange}
+              editable={Boolean(onImageCaptionChange)}
+              topRightActions={removeImageButton}
+            />
           )}
 
           <input
@@ -514,23 +532,15 @@ const EventImageSelector = ({
       {/* Selected Image Preview (for library tab) */}
       {activeTab === 'library' && preview && (
         <div className="mt-4">
-          <p className="text-sm font-medium text-gray-700 mb-2">Selected Image:</p>
-          <div className="relative w-full h-48">
-            <img
-              src={preview}
-              alt="Selected"
-              className="w-full h-full object-cover rounded-lg"
-            />
-            <button
-              type="button"
-              onClick={handleRemoveImage}
-              className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          <p className="text-sm font-semibold text-gray-700 mb-2">Selected Image</p>
+          <EventImageWithCaption
+            imageUrl={preview}
+            alt="Selected"
+            caption={caption}
+            onCaptionChange={onImageCaptionChange}
+            editable={Boolean(onImageCaptionChange)}
+            topRightActions={removeImageButton}
+          />
         </div>
       )}
     </div>

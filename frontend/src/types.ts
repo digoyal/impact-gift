@@ -1,3 +1,5 @@
+import type { EventImageCaption } from './utils/eventImageCaption';
+
 export interface User {
   id: number;
   email: string;
@@ -61,6 +63,7 @@ export interface Event {
   custom_colors?: any;
   event_image_url?: string;
   event_image_public_id?: string;
+  event_image_caption?: EventImageCaption | null;
   total_raised?: number;
   donation_count?: number;
   first_name?: string;
