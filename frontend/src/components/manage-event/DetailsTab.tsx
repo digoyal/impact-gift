@@ -160,7 +160,7 @@ const DetailsTab = ({
         </div>
 
         {/* Host Info */}
-        <div className="border-t pt-6">
+        <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="min-w-0">
               <label htmlFor="host_name" className="block text-sm font-semibold text-gray-700 mb-1">
@@ -194,7 +194,7 @@ const DetailsTab = ({
           </div>
         </div>
 
-        <div className="border-t pt-6">
+        <div>
           <div className="mb-4">
             <label htmlFor="rsvp_deadline" className="block text-sm font-semibold text-gray-700 mb-1">
               RSVP Deadline (Optional)
