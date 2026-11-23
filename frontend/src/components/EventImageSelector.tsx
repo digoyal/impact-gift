@@ -387,9 +387,9 @@ const EventImageSelector = ({
       {activeTab === 'library' && (
         <div>
           {libraryCategoryHeader ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 items-end">
-              <div className="min-w-0">{libraryCategoryHeader}</div>
-              <div className="min-w-0">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 items-end">
+              <div className="min-w-0 sm:col-span-2">{libraryCategoryHeader}</div>
+              <div className="min-w-0 sm:col-span-1">
                 <label htmlFor="event-image-category" className="block text-sm font-semibold text-gray-700 mb-1">
                   Category
                 </label>
