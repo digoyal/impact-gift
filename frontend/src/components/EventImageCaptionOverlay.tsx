@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import {
-  applyCaptionLayoutDefaults,
+  applyCaptionDefaults,
   type EventImageCaption,
-  eventImageCaptionFontStack,
+  eventImageCaptionTextStyle,
 } from '../utils/eventImageCaption';
 
 interface EventImageCaptionOverlayProps {
@@ -16,7 +16,7 @@ const EventImageCaptionOverlay = ({
   editable = false,
   onCaptionChange,
 }: EventImageCaptionOverlayProps) => {
-  const layout = applyCaptionLayoutDefaults(caption);
+  const layout = applyCaptionDefaults(caption);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -36,7 +36,7 @@ const EventImageCaptionOverlay = ({
       const xPercent = ((clientX - rect.left) / rect.width) * 100;
       const yPercent = ((clientY - rect.top) / rect.height) * 100;
       onCaptionChange(
-        applyCaptionLayoutDefaults({
+        applyCaptionDefaults({
           ...layout,
           xPercent: Math.min(100, Math.max(0, xPercent)),
           yPercent: Math.min(100, Math.max(0, yPercent)),
@@ -46,11 +46,8 @@ const EventImageCaptionOverlay = ({
     [layout, onCaptionChange]
   );
 
-  const textStyle = {
-    fontFamily: eventImageCaptionFontStack(layout.fontFamily),
-    fontSize: `${layout.fontSizePx}px`,
-    lineHeight: 1.25,
-  } as const;
+  const textStyle = eventImageCaptionTextStyle(layout);
+  const legibilityShadow = '0 1px 4px rgba(0,0,0,0.85), 0 0 12px rgba(0,0,0,0.45)';
 
   const boxPositionStyle = {
     left: `${layout.xPercent}%`,
@@ -68,11 +65,11 @@ const EventImageCaptionOverlay = ({
     return (
       <div ref={containerRef} className="absolute inset-0 pointer-events-none">
         <div
-          className="absolute flex items-center justify-center overflow-hidden px-2 py-1 text-center text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
+          className="absolute flex items-center justify-center overflow-hidden px-2 py-1 text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
           style={{
             ...boxPositionStyle,
             ...textStyle,
-            textShadow: '0 1px 4px rgba(0,0,0,0.85), 0 0 12px rgba(0,0,0,0.45)',
+            textShadow: legibilityShadow,
           }}
         >
           <p className="w-full break-words whitespace-pre-wrap">{layout.text}</p>
@@ -124,16 +121,16 @@ const EventImageCaptionOverlay = ({
           placeholder="Come celebrate with us!"
           onChange={(e) =>
             onCaptionChange?.(
-              applyCaptionLayoutDefaults({
+              applyCaptionDefaults({
                 ...layout,
                 text: e.target.value,
               })
             )
           }
-          className="min-h-0 flex-1 w-full resize-none border-0 bg-transparent px-3 py-2 text-center text-white placeholder:text-white/55 focus:outline-none focus:ring-0 overflow-auto"
+          className="min-h-0 flex-1 w-full resize-none border-0 bg-transparent px-3 py-2 text-center placeholder:text-white/55 focus:outline-none focus:ring-0 overflow-auto"
           style={{
             ...textStyle,
-            textShadow: '0 1px 3px rgba(0,0,0,0.7)',
+            textShadow: legibilityShadow,
           }}
         />
 
@@ -163,7 +160,7 @@ const EventImageCaptionOverlay = ({
             const dx = ((e.clientX - resizeStartRef.current.clientX) / rect.width) * 100;
             const dy = ((e.clientY - resizeStartRef.current.clientY) / rect.height) * 100;
             onCaptionChange(
-              applyCaptionLayoutDefaults({
+              applyCaptionDefaults({
                 ...layout,
                 widthPercent: resizeStartRef.current.widthPercent + dx * 2,
                 heightPercent: resizeStartRef.current.heightPercent + dy * 2,

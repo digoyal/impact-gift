@@ -8,11 +8,15 @@ export interface EventImageCaption {
   heightPercent?: number;
   fontFamily: EventImageCaptionFontFamily;
   fontSizePx: number;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 const FONT_FAMILIES: EventImageCaptionFontFamily[] = ['system', 'sans', 'serif', 'script'];
 const DEFAULT_CAPTION_WIDTH_PERCENT = 55;
 const DEFAULT_CAPTION_HEIGHT_PERCENT = 22;
+const DEFAULT_CAPTION_COLOR = '#ffffff';
 const MIN_CAPTION_WIDTH_PERCENT = 20;
 const MAX_CAPTION_WIDTH_PERCENT = 95;
 const MIN_CAPTION_HEIGHT_PERCENT = 10;
@@ -30,6 +34,12 @@ function clampHeightPercent(n: number): number {
   return Math.min(MAX_CAPTION_HEIGHT_PERCENT, Math.max(MIN_CAPTION_HEIGHT_PERCENT, n));
 }
 
+function normalizeCaptionColor(raw: unknown): string {
+  if (typeof raw !== 'string') return DEFAULT_CAPTION_COLOR;
+  const match = raw.trim().match(/^#([0-9A-Fa-f]{6})$/);
+  return match ? `#${match[1].toLowerCase()}` : DEFAULT_CAPTION_COLOR;
+}
+
 function applyCaptionLayoutDefaults(caption: EventImageCaption): EventImageCaption {
   return {
     ...caption,
@@ -39,6 +49,16 @@ function applyCaptionLayoutDefaults(caption: EventImageCaption): EventImageCapti
     heightPercent: clampHeightPercent(
       typeof caption.heightPercent === 'number' ? caption.heightPercent : DEFAULT_CAPTION_HEIGHT_PERCENT
     ),
+  };
+}
+
+function applyCaptionDefaults(caption: EventImageCaption): EventImageCaption {
+  const withLayout = applyCaptionLayoutDefaults(caption);
+  return {
+    ...withLayout,
+    color: normalizeCaptionColor(caption.color),
+    bold: Boolean(caption.bold),
+    italic: Boolean(caption.italic),
   };
 }
 
@@ -69,7 +89,7 @@ export function normalizeEventImageCaption(raw: unknown): EventImageCaption | nu
   const xPercent = typeof o.xPercent === 'number' ? clampPercent(o.xPercent) : 50;
   const yPercent = typeof o.yPercent === 'number' ? clampPercent(o.yPercent) : 72;
 
-  return applyCaptionLayoutDefaults({
+  return applyCaptionDefaults({
     text,
     xPercent,
     yPercent,
@@ -77,5 +97,8 @@ export function normalizeEventImageCaption(raw: unknown): EventImageCaption | nu
     heightPercent: typeof o.heightPercent === 'number' ? o.heightPercent : undefined,
     fontFamily,
     fontSizePx,
+    color: o.color,
+    bold: o.bold === true,
+    italic: o.italic === true,
   });
 }

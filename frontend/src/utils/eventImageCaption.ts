@@ -10,7 +10,13 @@ export interface EventImageCaption {
   heightPercent?: number;
   fontFamily: EventImageCaptionFontFamily;
   fontSizePx: number;
+  /** Text color as `#RRGGBB` (optional for legacy captions). */
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
 }
+
+export const DEFAULT_CAPTION_COLOR = '#ffffff';
 
 export const DEFAULT_CAPTION_WIDTH_PERCENT = 55;
 export const DEFAULT_CAPTION_HEIGHT_PERCENT = 22;
@@ -53,6 +59,9 @@ export const DEFAULT_EVENT_IMAGE_CAPTION: EventImageCaption = {
   heightPercent: DEFAULT_CAPTION_HEIGHT_PERCENT,
   fontFamily: 'sans',
   fontSizePx: 32,
+  color: DEFAULT_CAPTION_COLOR,
+  bold: false,
+  italic: false,
 };
 
 function clampPercent(n: number): number {
@@ -67,6 +76,13 @@ function clampHeightPercent(n: number): number {
   return Math.min(MAX_CAPTION_HEIGHT_PERCENT, Math.max(MIN_CAPTION_HEIGHT_PERCENT, n));
 }
 
+export function normalizeCaptionColor(raw: unknown): string {
+  if (typeof raw !== 'string') return DEFAULT_CAPTION_COLOR;
+  const trimmed = raw.trim();
+  const match = trimmed.match(/^#([0-9A-Fa-f]{6})$/);
+  return match ? `#${match[1].toLowerCase()}` : DEFAULT_CAPTION_COLOR;
+}
+
 export function applyCaptionLayoutDefaults(caption: EventImageCaption): EventImageCaption {
   return {
     ...caption,
@@ -76,6 +92,35 @@ export function applyCaptionLayoutDefaults(caption: EventImageCaption): EventIma
     heightPercent: clampHeightPercent(
       typeof caption.heightPercent === 'number' ? caption.heightPercent : DEFAULT_CAPTION_HEIGHT_PERCENT
     ),
+  };
+}
+
+export function applyCaptionDefaults(caption: EventImageCaption): EventImageCaption {
+  const withLayout = applyCaptionLayoutDefaults(caption);
+  return {
+    ...withLayout,
+    color: normalizeCaptionColor(caption.color),
+    bold: Boolean(caption.bold),
+    italic: Boolean(caption.italic),
+  };
+}
+
+export function eventImageCaptionTextStyle(caption: EventImageCaption): {
+  fontFamily: string;
+  fontSize: string;
+  lineHeight: number;
+  color: string;
+  fontWeight: number;
+  fontStyle: 'normal' | 'italic';
+} {
+  const c = applyCaptionDefaults(caption);
+  return {
+    fontFamily: eventImageCaptionFontStack(c.fontFamily),
+    fontSize: `${c.fontSizePx}px`,
+    lineHeight: 1.25,
+    color: c.color!,
+    fontWeight: c.bold ? 700 : 400,
+    fontStyle: c.italic ? 'italic' : 'normal',
   };
 }
 
@@ -103,7 +148,7 @@ export function parseEventImageCaption(raw: unknown): EventImageCaption | null {
       ? Math.round(o.fontSizePx)
       : 32;
 
-  return applyCaptionLayoutDefaults({
+  return applyCaptionDefaults({
     text,
     xPercent: typeof o.xPercent === 'number' ? clampPercent(o.xPercent) : 50,
     yPercent: typeof o.yPercent === 'number' ? clampPercent(o.yPercent) : 72,
@@ -111,17 +156,20 @@ export function parseEventImageCaption(raw: unknown): EventImageCaption | null {
     heightPercent: typeof o.heightPercent === 'number' ? o.heightPercent : undefined,
     fontFamily,
     fontSizePx,
+    color: typeof o.color === 'string' ? o.color : undefined,
+    bold: o.bold === true,
+    italic: o.italic === true,
   });
 }
 
 export function captionForApi(caption: EventImageCaption | null | undefined): EventImageCaption | null {
   if (!caption?.text?.trim()) return null;
-  const layout = applyCaptionLayoutDefaults(caption);
+  const normalized = applyCaptionDefaults(caption);
   return {
-    ...layout,
+    ...normalized,
     text: caption.text.trim(),
-    xPercent: clampPercent(layout.xPercent),
-    yPercent: clampPercent(layout.yPercent),
+    xPercent: clampPercent(normalized.xPercent),
+    yPercent: clampPercent(normalized.yPercent),
   };
 }
 

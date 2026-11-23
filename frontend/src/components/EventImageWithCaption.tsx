@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react';
 import {
+  applyCaptionDefaults,
+  DEFAULT_CAPTION_COLOR,
   DEFAULT_EVENT_IMAGE_CAPTION,
   EVENT_IMAGE_CAPTION_FONT_OPTIONS,
   EVENT_IMAGE_CAPTION_SIZE_OPTIONS,
+  normalizeCaptionColor,
   type EventImageCaption,
 } from '../utils/eventImageCaption';
 import EventImageCaptionOverlay from './EventImageCaptionOverlay';
@@ -30,11 +33,11 @@ const EventImageWithCaption = ({
   editable = false,
   topRightActions,
 }: EventImageWithCaptionProps) => {
-  const workingCaption = caption ?? DEFAULT_EVENT_IMAGE_CAPTION;
+  const workingCaption = applyCaptionDefaults(caption ?? DEFAULT_EVENT_IMAGE_CAPTION);
 
   const patchCaption = (patch: Partial<EventImageCaption>) => {
     if (!onCaptionChange) return;
-    onCaptionChange({ ...workingCaption, ...patch });
+    onCaptionChange(applyCaptionDefaults({ ...workingCaption, ...patch }));
   };
 
   return (
@@ -90,6 +93,48 @@ const EventImageWithCaption = ({
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label htmlFor="event-image-caption-color" className={LABEL_CLASS}>
+                Text color
+              </label>
+              <input
+                id="event-image-caption-color"
+                type="color"
+                className="h-10 w-14 cursor-pointer rounded border border-neutral-300 bg-white p-1"
+                value={normalizeCaptionColor(workingCaption.color ?? DEFAULT_CAPTION_COLOR)}
+                onChange={(e) => patchCaption({ color: normalizeCaptionColor(e.target.value) })}
+                aria-label="Caption text color"
+              />
+            </div>
+            <div className="flex gap-2 pb-0.5">
+              <button
+                type="button"
+                aria-pressed={workingCaption.bold}
+                onClick={() => patchCaption({ bold: !workingCaption.bold })}
+                className={`min-h-[40px] min-w-[40px] rounded-md border px-3 text-sm font-bold transition-colors ${
+                  workingCaption.bold
+                    ? 'border-primary-600 bg-primary-50 text-primary-800'
+                    : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50'
+                }`}
+              >
+                B
+              </button>
+              <button
+                type="button"
+                aria-pressed={workingCaption.italic}
+                onClick={() => patchCaption({ italic: !workingCaption.italic })}
+                className={`min-h-[40px] min-w-[40px] rounded-md border px-3 text-sm italic transition-colors ${
+                  workingCaption.italic
+                    ? 'border-primary-600 bg-primary-50 text-primary-800'
+                    : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50'
+                }`}
+              >
+                I
+              </button>
             </div>
           </div>
         </div>
