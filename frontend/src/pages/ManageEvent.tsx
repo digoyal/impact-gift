@@ -958,7 +958,7 @@ const ManageEvent = () => {
 
             {/* Basic Info */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-1">
                 Event Title *
               </label>
               <input
@@ -972,7 +972,7 @@ const ManageEvent = () => {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
                 About This Event
               </label>
               <textarea
@@ -988,7 +988,7 @@ const ManageEvent = () => {
             {/* Date & Time */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="min-w-0">
-                <label htmlFor="event_date" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="event_date" className="block text-sm font-semibold text-gray-700 mb-1">
                   Start Date *
                 </label>
                 <input
@@ -1002,7 +1002,7 @@ const ManageEvent = () => {
               </div>
 
               <div className="min-w-0">
-                <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="start_time" className="block text-sm font-semibold text-gray-700 mb-1">
                   Start Time *
                 </label>
                 <input
@@ -1016,7 +1016,7 @@ const ManageEvent = () => {
               </div>
 
               <div className="min-w-0">
-                <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="end_time" className="block text-sm font-semibold text-gray-700 mb-1">
                   End Time (Optional)
                 </label>
                 <input
@@ -1032,7 +1032,7 @@ const ManageEvent = () => {
             {/* Location */}
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="venue_name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="venue_name" className="block text-sm font-semibold text-gray-700 mb-1">
                   Venue Name *
                 </label>
                 <input
@@ -1047,7 +1047,7 @@ const ManageEvent = () => {
               </div>
 
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-1">
                   Address (Optional)
                 </label>
                 <input
@@ -1065,7 +1065,7 @@ const ManageEvent = () => {
             <div className="border-t pt-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="min-w-0">
-                  <label htmlFor="host_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="host_name" className="block text-sm font-semibold text-gray-700 mb-1">
                     Host Name *
                   </label>
                   <input
@@ -1080,7 +1080,7 @@ const ManageEvent = () => {
                 </div>
 
                 <div className="min-w-0">
-                  <label htmlFor="host_phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="host_phone" className="block text-sm font-semibold text-gray-700 mb-1">
                     Host Phone *
                   </label>
                   <input
@@ -1098,7 +1098,7 @@ const ManageEvent = () => {
 
             <div className="border-t pt-6">
               <div className="mb-4">
-                <label htmlFor="rsvp_deadline" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="rsvp_deadline" className="block text-sm font-semibold text-gray-700 mb-1">
                   RSVP Deadline (Optional)
                 </label>
                 <input

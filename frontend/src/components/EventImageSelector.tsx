@@ -344,7 +344,7 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-semibold text-gray-700 mb-2">
         {label === undefined || label === '' ? 'Event Image' : label}
       </label>
       {helpText && <p className="text-xs text-gray-500 mb-3">{helpText}</p>}
@@ -378,7 +378,7 @@ const EventImageSelector = ({ onImageUploaded, currentImageUrl, label, helpText 
       {/* Library Tab */}
       {activeTab === 'library' && (
         <div>
-          <label htmlFor="event-image-category" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="event-image-category" className="block text-sm font-semibold text-gray-700 mb-1">
             Category
           </label>
           <select
