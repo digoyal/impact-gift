@@ -39,25 +39,21 @@ const EventImageWithCaption = ({
 
   return (
     <div className="space-y-3">
-      {editable && (
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="event-image-caption-text" className={LABEL_CLASS}>
-              Image Caption (Optional)
-            </label>
-            <input
-              id="event-image-caption-text"
-              type="text"
-              className="input"
-              placeholder='e.g., Come celebrate with us!'
-              value={workingCaption.text}
-              onChange={(e) => patchCaption({ text: e.target.value })}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Drag the caption on the preview to position it anywhere on the image.
-            </p>
-          </div>
+      <div className={previewClassName}>
+        <img src={imageUrl} alt={alt} className={imageClassName} />
+        <EventImageCaptionOverlay
+          caption={workingCaption}
+          editable={editable}
+          onCaptionChange={onCaptionChange}
+        />
+        {topRightActions}
+      </div>
 
+      {editable && (
+        <div className="space-y-2">
+          <p className="text-xs text-gray-500">
+            Type in the box on the image, use the top bar to drag it, and adjust font and size below.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="min-w-0">
               <label htmlFor="event-image-caption-font" className={LABEL_CLASS}>
@@ -98,16 +94,6 @@ const EventImageWithCaption = ({
           </div>
         </div>
       )}
-
-      <div className={previewClassName}>
-        <img src={imageUrl} alt={alt} className={imageClassName} />
-        <EventImageCaptionOverlay
-          caption={workingCaption}
-          editable={editable && Boolean(workingCaption.text.trim())}
-          onCaptionChange={onCaptionChange}
-        />
-        {topRightActions}
-      </div>
     </div>
   );
 };
