@@ -10,7 +10,7 @@ import {
 } from '../utils/eventImageCaption';
 import EventImageCaptionOverlay from './EventImageCaptionOverlay';
 
-const LABEL_CLASS = 'block text-sm font-semibold text-gray-700 mb-1';
+const LABEL_CLASS = 'block text-xs font-semibold text-gray-700 mb-1';
 
 interface EventImageWithCaptionProps {
   imageUrl: string;
@@ -55,16 +55,20 @@ const EventImageWithCaption = ({
       {editable && (
         <div className="space-y-2">
           <p className="text-xs text-gray-500">
-            Type in the box on the image, drag the top bar to move, pull the bottom-right corner to resize, and set font and size below.
+            Type in the box on the image, drag the top bar to move, pull the bottom-right corner to resize.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="min-w-0">
+          <div
+            className="flex flex-wrap items-end gap-3 sm:flex-nowrap sm:gap-4"
+            role="toolbar"
+            aria-label="Caption text style"
+          >
+            <div className="min-w-0 w-full basis-full sm:basis-auto sm:flex-1 sm:max-w-[11rem]">
               <label htmlFor="event-image-caption-font" className={LABEL_CLASS}>
                 Font
               </label>
               <select
                 id="event-image-caption-font"
-                className="input w-full"
+                className="input w-full min-w-0"
                 value={workingCaption.fontFamily}
                 onChange={(e) =>
                   patchCaption({ fontFamily: e.target.value as EventImageCaption['fontFamily'] })
@@ -77,13 +81,14 @@ const EventImageWithCaption = ({
                 ))}
               </select>
             </div>
-            <div className="min-w-0">
+
+            <div className="min-w-0 w-[calc(50%-0.375rem)] sm:w-auto sm:min-w-[5.5rem]">
               <label htmlFor="event-image-caption-size" className={LABEL_CLASS}>
                 Size
               </label>
               <select
                 id="event-image-caption-size"
-                className="input w-full"
+                className="input w-full min-w-0"
                 value={workingCaption.fontSizePx}
                 onChange={(e) => patchCaption({ fontSizePx: Number(e.target.value) })}
               >
@@ -94,26 +99,26 @@ const EventImageWithCaption = ({
                 ))}
               </select>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-end gap-4">
-            <div>
+            <div className="shrink-0 w-[calc(50%-0.375rem)] sm:w-auto">
               <label htmlFor="event-image-caption-color" className={LABEL_CLASS}>
-                Text color
+                Color
               </label>
               <input
                 id="event-image-caption-color"
                 type="color"
-                className="h-10 w-14 cursor-pointer rounded border border-neutral-300 bg-white p-1"
+                className="h-10 w-full sm:w-14 cursor-pointer rounded border border-neutral-300 bg-white p-1"
                 value={normalizeCaptionColor(workingCaption.color ?? DEFAULT_CAPTION_COLOR)}
                 onChange={(e) => patchCaption({ color: normalizeCaptionColor(e.target.value) })}
                 aria-label="Caption text color"
               />
             </div>
-            <div className="flex gap-2 pb-0.5">
+
+            <div className="flex shrink-0 items-center gap-2 sm:pb-0.5">
               <button
                 type="button"
                 aria-pressed={workingCaption.bold}
+                title="Bold"
                 onClick={() => patchCaption({ bold: !workingCaption.bold })}
                 className={`min-h-[40px] min-w-[40px] rounded-md border px-3 text-sm font-bold transition-colors ${
                   workingCaption.bold
@@ -126,6 +131,7 @@ const EventImageWithCaption = ({
               <button
                 type="button"
                 aria-pressed={workingCaption.italic}
+                title="Italic"
                 onClick={() => patchCaption({ italic: !workingCaption.italic })}
                 className={`min-h-[40px] min-w-[40px] rounded-md border px-3 text-sm italic transition-colors ${
                   workingCaption.italic
