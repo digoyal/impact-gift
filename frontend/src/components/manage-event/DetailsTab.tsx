@@ -46,8 +46,6 @@ const DetailsTab = ({
   return (
     <div className="card">
       <form onSubmit={onSubmit} className="space-y-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Edit Event Details</h3>
-
         {/* Event Image */}
         <div>
           <EventImageSelector
