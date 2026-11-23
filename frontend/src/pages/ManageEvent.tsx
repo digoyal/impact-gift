@@ -986,10 +986,10 @@ const ManageEvent = () => {
             </div>
 
             {/* Date & Time */}
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="min-w-0">
                 <label htmlFor="event_date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Event Date *
+                  Start Date *
                 </label>
                 <input
                   id="event_date"
@@ -1001,7 +1001,7 @@ const ManageEvent = () => {
                 />
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-1">
                   Start Time *
                 </label>
@@ -1015,7 +1015,7 @@ const ManageEvent = () => {
                 />
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-1">
                   End Time (Optional)
                 </label>
