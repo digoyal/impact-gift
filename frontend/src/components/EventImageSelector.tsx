@@ -350,8 +350,44 @@ const EventImageSelector = ({
     }
   };
 
+  const categorySelect = (idSuffix = '') => (
+    <>
+      <label
+        htmlFor={`event-image-category${idSuffix}`}
+        className="block text-sm font-semibold text-gray-700 mb-1"
+      >
+        Category
+      </label>
+      <select
+        id={`event-image-category${idSuffix}`}
+        className="input w-full"
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+      >
+        {IMAGE_CATEGORIES.map((category) => (
+          <option key={category.name} value={category.name}>
+            {category.name}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+
   return (
     <div>
+      {libraryCategoryHeader && (
+        <div className="mb-4">
+          {activeTab === 'library' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-end">
+              <div className="min-w-0 sm:col-span-2">{libraryCategoryHeader}</div>
+              <div className="min-w-0 sm:col-span-1">{categorySelect('')}</div>
+            </div>
+          ) : (
+            <div className="min-w-0 w-full">{libraryCategoryHeader}</div>
+          )}
+        </div>
+      )}
+
       <label className="block text-sm font-semibold text-gray-700 mb-2">
         {label === undefined || label === '' ? 'Event Image' : label}
       </label>
@@ -386,46 +422,7 @@ const EventImageSelector = ({
       {/* Library Tab */}
       {activeTab === 'library' && (
         <div>
-          {libraryCategoryHeader ? (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 items-end">
-              <div className="min-w-0 sm:col-span-2">{libraryCategoryHeader}</div>
-              <div className="min-w-0 sm:col-span-1">
-                <label htmlFor="event-image-category" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Category
-                </label>
-                <select
-                  id="event-image-category"
-                  className="input w-full"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  {IMAGE_CATEGORIES.map((category) => (
-                    <option key={category.name} value={category.name}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          ) : (
-            <>
-              <label htmlFor="event-image-category" className="block text-sm font-semibold text-gray-700 mb-1">
-                Category
-              </label>
-              <select
-                id="event-image-category"
-                className="input w-full mb-4"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                {IMAGE_CATEGORIES.map((category) => (
-                  <option key={category.name} value={category.name}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
+          {!libraryCategoryHeader && <div className="mb-4">{categorySelect('')}</div>}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {IMAGE_CATEGORIES.find((cat) => cat.name === selectedCategory)?.images.map((image) => (
@@ -467,9 +464,6 @@ const EventImageSelector = ({
       {/* Upload Tab */}
       {activeTab === 'upload' && (
         <div>
-          {libraryCategoryHeader && (
-            <div className="mb-4 min-w-0">{libraryCategoryHeader}</div>
-          )}
           {!preview ? (
             <div
               onClick={() => fileInputRef.current?.click()}
