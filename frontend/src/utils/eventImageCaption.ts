@@ -60,7 +60,7 @@ export const DEFAULT_EVENT_IMAGE_CAPTION: EventImageCaption = {
   widthPercent: DEFAULT_CAPTION_WIDTH_PERCENT,
   heightPercent: DEFAULT_CAPTION_HEIGHT_PERCENT,
   fontFamily: 'sans',
-  fontSizePx: 32,
+  fontSizePx: 20,
   color: DEFAULT_CAPTION_COLOR,
   bold: false,
   italic: false,
@@ -163,7 +163,7 @@ export function parseEventImageCaption(raw: unknown): EventImageCaption | null {
   const fontSizePx =
     typeof o.fontSizePx === 'number' && o.fontSizePx >= 12 && o.fontSizePx <= 96
       ? Math.round(o.fontSizePx)
-      : 32;
+      : 20;
 
   return applyCaptionDefaults({
     text,

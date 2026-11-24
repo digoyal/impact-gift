@@ -93,7 +93,7 @@ export function normalizeEventImageCaption(raw: unknown): EventImageCaption | nu
   const fontSizePx =
     typeof o.fontSizePx === 'number' && o.fontSizePx >= 12 && o.fontSizePx <= 96
       ? Math.round(o.fontSizePx)
-      : 32;
+      : 20;
 
   const xPercent = typeof o.xPercent === 'number' ? clampPercent(o.xPercent) : 50;
   const yPercent = typeof o.yPercent === 'number' ? clampPercent(o.yPercent) : 72;
