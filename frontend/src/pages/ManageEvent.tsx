@@ -7,7 +7,6 @@ import { Event, Guest, Donation, RSVPSummaryResponse, Charity } from '../types';
 import { EventPhoto } from '../components/EventPhotosUploader';
 import DressCodeTab from '../components/manage-event/DressCodeTab';
 import ImpactGiftTab from '../components/manage-event/ImpactGiftTab';
-import CoHostsTab from '../components/manage-event/CoHostsTab';
 import RSVPSummaryBar from '../components/manage-event/RSVPSummaryBar';
 import PotluckTab from '../components/manage-event/PotluckTab';
 import GuestsTab from '../components/manage-event/GuestsTab';
@@ -57,7 +56,6 @@ function SettingsGearIcon({ className }: { className?: string }) {
 
 const MANAGE_EVENT_TAB_IDS = [
   'details',
-  'cohosts',
   'guests',
   'dresscode',
   'potluck',
@@ -72,6 +70,7 @@ function resolveManageEventTab(tab: string | undefined): ManageEventTabType | un
   if (!tab) return undefined;
   if (tab === 'rsvp') return 'guests';
   if (tab === 'progress') return 'charities';
+  if (tab === 'cohosts') return 'details';
   return MANAGE_EVENT_TAB_IDS.includes(tab as ManageEventTabType) ? (tab as ManageEventTabType) : undefined;
 }
 
@@ -853,7 +852,6 @@ const ManageEvent = () => {
     charities: 'Impact Gift',
     guests: 'Guests',
     communication: 'Message',
-    cohosts: 'Co-hosts',
     settings: 'Settings',
   };
 
@@ -1269,7 +1267,6 @@ const ManageEvent = () => {
 
       {activeTab === 'potluck' && <PotluckTab event={event} />}
 
-      {activeTab === 'cohosts' && <CoHostsTab eventId={event.id} />}
 
       {/* Paste Email List Modal */}
       {showBulkImportModal && (
