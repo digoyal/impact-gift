@@ -117,14 +117,16 @@ const EventImageCaptionOverlay = ({
           id="event-image-caption-on-image"
           value={layout.text}
           placeholder="Come celebrate with us!"
-          onChange={(e) =>
+          onChange={(e) => {
+            const text = e.target.value;
             onCaptionChange?.(
               applyCaptionDefaults({
                 ...layout,
-                text: e.target.value,
+                text,
+                enabled: text.trim().length > 0 ? true : layout.enabled,
               })
-            )
-          }
+            );
+          }}
           onPointerDown={(e) => e.stopPropagation()}
           className="min-h-0 flex-1 w-full cursor-text resize-none border-0 bg-transparent px-2 py-1.5 text-center placeholder:text-white/55 focus:outline-none focus:ring-0 overflow-auto"
           style={{

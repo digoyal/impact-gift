@@ -24,7 +24,7 @@ interface EventDetailsFormProps {
   formData: EventDetailsFormFields;
   onFormDataChange: (data: EventDetailsFormFields) => void;
   eventImage: EventImageValue;
-  onEventImageChange: (image: EventImageValue) => void;
+  onEventImageChange: (image: EventImageValue | ((prev: EventImageValue) => EventImageValue)) => void;
   /** Shown under Event Image on create only */
   eventImageHelpText?: string;
   /** Optional hint below RSVP deadline (create page) */
@@ -69,11 +69,11 @@ const EventDetailsForm = ({
         <EventImageSelector
           currentImageUrl={eventImage.url}
           onImageUploaded={(url, publicId) =>
-            onEventImageChange({ ...eventImage, url, publicId })
+            onEventImageChange((prev) => ({ ...prev, url, publicId }))
           }
           imageCaption={eventImage.caption}
           onImageCaptionChange={(caption: EventImageCaption) =>
-            onEventImageChange({ ...eventImage, caption })
+            onEventImageChange((prev) => ({ ...prev, caption }))
           }
           helpText={eventImageHelpText}
           libraryCategoryHeader={titleField}

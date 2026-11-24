@@ -14,7 +14,7 @@ interface DetailsTabProps {
   formData: FormData;
   onFormDataChange: (data: FormData) => void;
   eventImage: EventImageValue;
-  onEventImageChange: (image: EventImageValue) => void;
+  onEventImageChange: (image: EventImageValue | ((prev: EventImageValue) => EventImageValue)) => void;
   onSubmit: (e: FormEvent) => void;
   saveLoading: boolean;
 }

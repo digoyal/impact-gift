@@ -3,6 +3,7 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { upload, deleteImage, fileToUploadMeta } from '../services/uploadService';
 import { query } from '../database/db';
 import { normalizeEventImageCaption } from '../utils/eventImageCaption';
+import { isOwnerOrCoHost } from '../utils/coHostHelpers';
 
 const router = Router();
 
@@ -48,17 +49,22 @@ router.put('/event/:eventId', authenticate, async (req: AuthRequest, res: Respon
       return res.status(400).json({ error: 'Image URL is required' });
     }
 
-    // Verify event ownership
     const eventCheck = await query(
-      'SELECT id, event_image_public_id FROM events WHERE id = $1 AND user_id = $2',
-      [eventId, userId]
+      'SELECT id, event_image_public_id FROM events WHERE id = $1',
+      [eventId]
     );
 
     if (eventCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Event not found or unauthorized' });
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    const hasAccess = await isOwnerOrCoHost(userId, Number(eventId), req.user!.email);
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Not authorized' });
     }
 
     const oldPublicId = eventCheck.rows[0].event_image_public_id;
+    const nextPublicId = publicId || null;
 
     // Update event with new image
     if (updateCaption) {
@@ -77,8 +83,7 @@ router.put('/event/:eventId', authenticate, async (req: AuthRequest, res: Respon
       );
     }
 
-    // Delete old stored file when applicable
-    if (oldPublicId) {
+    if (oldPublicId && oldPublicId !== nextPublicId) {
       await deleteImage(oldPublicId);
     }
 

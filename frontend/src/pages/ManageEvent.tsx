@@ -733,15 +733,14 @@ const ManageEvent = () => {
       await api.put(`/events/${slug}`, eventData);
 
       if (eventImage.url) {
-        try {
-          await api.put(`/event-images/event/${event.id}`, {
-            imageUrl: eventImage.url,
-            publicId: eventImage.publicId,
-            caption: captionForApi(eventImage.caption),
-          });
-        } catch (imgError) {
-          console.error('Failed to save event image:', imgError);
-        }
+        const captionPayload = captionForApi(
+          eventImage.caption ?? { ...DEFAULT_EVENT_IMAGE_CAPTION }
+        );
+        await api.put(`/event-images/event/${event.id}`, {
+          imageUrl: eventImage.url,
+          publicId: eventImage.publicId,
+          caption: captionPayload,
+        });
       }
 
       toast.success('Event updated successfully!');

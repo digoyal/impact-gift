@@ -109,6 +109,6 @@ export function normalizeEventImageCaption(raw: unknown): EventImageCaption | nu
     color: typeof o.color === 'string' ? o.color : undefined,
     bold: o.bold === true,
     italic: o.italic === true,
-    enabled: hasEnabledFlag ? o.enabled === true : undefined,
+    enabled: hasEnabledFlag ? Boolean(o.enabled) : undefined,
   });
 }

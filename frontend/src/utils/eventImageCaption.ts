@@ -176,21 +176,23 @@ export function parseEventImageCaption(raw: unknown): EventImageCaption | null {
     color: typeof o.color === 'string' ? o.color : undefined,
     bold: o.bold === true,
     italic: o.italic === true,
-    enabled: hasEnabledFlag ? o.enabled === true : undefined,
+    enabled: hasEnabledFlag ? Boolean(o.enabled) : undefined,
   });
 }
 
 export function captionForApi(caption: EventImageCaption | null | undefined): EventImageCaption | null {
   if (!caption) return null;
+  const textTrimmed = (caption.text ?? '').trim();
   const normalized = applyCaptionDefaults(caption);
-  const text = caption.text?.trim() ?? '';
-  if (!text && !normalized.enabled) return null;
+  if (!textTrimmed && !normalized.enabled) return null;
+  /** Non-empty text saved from Details implies caption should display (enabled on). */
+  const enabled = textTrimmed.length > 0 ? true : normalized.enabled;
   return {
     ...normalized,
-    text: text || caption.text || '',
+    text: textTrimmed.length > 0 ? textTrimmed : caption.text ?? '',
     xPercent: clampPercent(normalized.xPercent),
     yPercent: clampPercent(normalized.yPercent),
-    enabled: normalized.enabled,
+    enabled,
   };
 }
 
