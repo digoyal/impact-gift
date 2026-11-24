@@ -27,6 +27,9 @@ const CreateEvent = () => {
     address: '',
     host_name: '',
     host_phone: '',
+    cohosts_enabled: false,
+    cohost_name: '',
+    cohost_phone: '',
     rsvp_deadline: '',
   });
   const navigate = useNavigate();

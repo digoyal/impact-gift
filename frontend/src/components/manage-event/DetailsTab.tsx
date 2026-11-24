@@ -29,6 +29,9 @@ const pickDetailsFields = (data: FormData): EventDetailsFormFields => ({
   address: data.address,
   host_name: data.host_name,
   host_phone: data.host_phone,
+  cohosts_enabled: data.cohosts_enabled,
+  cohost_name: data.cohost_name,
+  cohost_phone: data.cohost_phone,
   rsvp_deadline: data.rsvp_deadline,
 });
 

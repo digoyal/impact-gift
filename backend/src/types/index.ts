@@ -104,6 +104,9 @@ export interface CreateEventInput {
   virtual_link?: string; // Zoom/video conference link
   host_name?: string; // Primary host display name
   host_phone?: string; // Host contact phone
+  cohosts_enabled?: boolean;
+  cohost_name?: string;
+  cohost_phone?: string;
   rsvp_deadline?: string; // RSVP cutoff date (ISO format)
   dress_code?: string; // Dress code for the event
   charity_id?: number; // Optional since we support multiple charities via charity_ids

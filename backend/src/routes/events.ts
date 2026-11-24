@@ -26,6 +26,9 @@ router.post(
     body('virtual_link').optional({ nullable: true, checkFalsy: true }).isURL(),
     body('host_name').optional().trim(),
     body('host_phone').optional().trim(),
+    body('cohosts_enabled').optional().isBoolean(),
+    body('cohost_name').optional().trim(),
+    body('cohost_phone').optional().trim(),
     body('rsvp_deadline').optional({ nullable: true, checkFalsy: true }).isISO8601(),
     body('charity_id').optional().isInt(),
     body('charity_ids').optional().isArray(),
@@ -54,9 +57,13 @@ router.post(
       const {
         title, description, event_type, event_date, start_date, end_date,
         start_time, end_time, venue_name, address, virtual_link,
-        host_name, host_phone, rsvp_deadline, dress_code,
+        host_name, host_phone, cohosts_enabled, cohost_name, cohost_phone,
+        rsvp_deadline, dress_code,
         charity_id, charity_ids, goal_amount, potluck_enabled, impact_gift_enabled
       }: CreateEventInput = req.body;
+      const cohostsEnabled = cohosts_enabled === true || cohosts_enabled === 'true';
+      const cohostName = typeof cohost_name === 'string' && cohost_name.trim() ? cohost_name.trim() : null;
+      const cohostPhone = typeof cohost_phone === 'string' && cohost_phone.trim() ? cohost_phone.trim() : null;
       const slug = generateSlug(title);
 
       // Support both single charity (legacy) and multiple charities (new feature)
@@ -81,10 +88,11 @@ router.post(
         `INSERT INTO events (
           user_id, title, description, event_type, event_date, start_date, end_date,
           start_time, end_time, venue_name, address, virtual_link,
-          host_name, host_phone, rsvp_deadline, dress_code,
+          host_name, host_phone, cohosts_enabled, cohost_name, cohost_phone,
+          rsvp_deadline, dress_code,
           charity_id, goal_amount, slug, potluck_enabled, impact_gift_enabled
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
          RETURNING *`,
         [
           req.user!.id,
@@ -101,6 +109,9 @@ router.post(
           virtual_link || null,
           host_name || null,
           host_phone || null,
+          cohostsEnabled,
+          cohostName,
+          cohostPhone,
           rsvp_deadline || null,
           dress_code || null,
           charityList.length === 1 ? charityList[0] : null,
@@ -505,6 +516,16 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
       event_type,
       start_date,
       end_date,
+      start_time,
+      end_time,
+      venue_name,
+      address,
+      host_name,
+      host_phone,
+      cohosts_enabled,
+      cohost_name,
+      cohost_phone,
+      rsvp_deadline,
       goal_amount,
       is_active,
       show_guest_list,
@@ -514,6 +535,20 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
       potluck_enabled,
       impact_gift_enabled
     } = req.body;
+    const hasCohostsEnabled = Object.prototype.hasOwnProperty.call(req.body, 'cohosts_enabled');
+    const hasCohostName = Object.prototype.hasOwnProperty.call(req.body, 'cohost_name');
+    const hasCohostPhone = Object.prototype.hasOwnProperty.call(req.body, 'cohost_phone');
+    const cohostsEnabled = cohosts_enabled === true || cohosts_enabled === 'true';
+    const cohostNameForDb = hasCohostName
+      ? typeof cohost_name === 'string' && cohost_name.trim()
+        ? cohost_name.trim()
+        : null
+      : undefined;
+    const cohostPhoneForDb = hasCohostPhone
+      ? typeof cohost_phone === 'string' && cohost_phone.trim()
+        ? cohost_phone.trim()
+        : null
+      : undefined;
 
     // Check if identifier is a slug or ID
     const isSlug = isNaN(Number(identifier));
@@ -542,17 +577,55 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
            event_type = COALESCE($4, event_type),
            start_date = COALESCE($5, start_date),
            end_date = COALESCE($6, end_date),
-           goal_amount = COALESCE($7, goal_amount),
-           is_active = COALESCE($8, is_active),
-           show_guest_list = COALESCE($9, show_guest_list),
-           allow_additional_guests = COALESCE($10, allow_additional_guests),
-           dress_code = COALESCE($11, dress_code),
-           potluck_enabled = COALESCE($12, potluck_enabled),
-           impact_gift_enabled = COALESCE($13, impact_gift_enabled),
+           start_time = COALESCE($7, start_time),
+           end_time = COALESCE($8, end_time),
+           venue_name = COALESCE($9, venue_name),
+           address = COALESCE($10, address),
+           host_name = COALESCE($11, host_name),
+           host_phone = COALESCE($12, host_phone),
+           cohosts_enabled = CASE WHEN $25 THEN $13 ELSE cohosts_enabled END,
+           cohost_name = CASE WHEN $26 THEN $14 ELSE cohost_name END,
+           cohost_phone = CASE WHEN $27 THEN $15 ELSE cohost_phone END,
+           rsvp_deadline = COALESCE($16, rsvp_deadline),
+           goal_amount = COALESCE($17, goal_amount),
+           is_active = COALESCE($18, is_active),
+           show_guest_list = COALESCE($19, show_guest_list),
+           allow_additional_guests = COALESCE($20, allow_additional_guests),
+           dress_code = COALESCE($21, dress_code),
+           potluck_enabled = COALESCE($22, potluck_enabled),
+           impact_gift_enabled = COALESCE($23, impact_gift_enabled),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $14
+       WHERE id = $24
        RETURNING *`,
-      [title, description, event_date, event_type, start_date, end_date, goal_amount, is_active, show_guest_list, allow_additional_guests, dress_code, potluck_enabled, impact_gift_enabled, event.id]
+      [
+        title,
+        description,
+        event_date,
+        event_type,
+        start_date,
+        end_date,
+        start_time,
+        end_time,
+        venue_name,
+        address,
+        host_name,
+        host_phone,
+        hasCohostsEnabled ? cohostsEnabled : null,
+        cohostNameForDb ?? null,
+        cohostPhoneForDb ?? null,
+        rsvp_deadline,
+        goal_amount,
+        is_active,
+        show_guest_list,
+        allow_additional_guests,
+        dress_code,
+        potluck_enabled,
+        impact_gift_enabled,
+        event.id,
+        hasCohostsEnabled,
+        hasCohostName,
+        hasCohostPhone
+      ]
     );
 
     // If charity_ids provided, update charity association
