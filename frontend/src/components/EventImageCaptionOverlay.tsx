@@ -86,37 +86,30 @@ const EventImageCaptionOverlay = ({
   return (
     <div ref={containerRef} className="absolute inset-0 z-[2]">
       <div
-        className={`absolute flex flex-col overflow-hidden rounded-md border-2 border-dashed border-white/90 bg-black/50 shadow-lg ring-2 ring-primary-300/80 backdrop-blur-[2px] ${
-          isDragging ? 'cursor-grabbing' : ''
+        className={`absolute flex flex-col overflow-hidden rounded-md border-2 border-dashed border-white/90 bg-black/50 p-1 shadow-lg ring-2 ring-primary-300/80 backdrop-blur-[2px] ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
         style={boxPositionStyle}
+        aria-label="Drag caption box to move"
+        onPointerDown={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.tagName === 'TEXTAREA' || target.closest('button[aria-label="Resize caption box"]')) {
+            return;
+          }
+          e.preventDefault();
+          setIsDragging(true);
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          if (!isDragging) return;
+          updatePositionFromClient(e.clientX, e.clientY);
+        }}
+        onPointerUp={(e) => {
+          setIsDragging(false);
+          (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        }}
+        onPointerCancel={() => setIsDragging(false)}
       >
-        <div
-          className={`flex shrink-0 items-center justify-center gap-1 border-b border-white/25 px-2 py-1 text-white/90 ${
-            isDragging ? 'cursor-grabbing' : 'cursor-grab'
-          }`}
-          aria-label="Drag to move caption"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-          }}
-          onPointerMove={(e) => {
-            if (!isDragging) return;
-            updatePositionFromClient(e.clientX, e.clientY);
-          }}
-          onPointerUp={(e) => {
-            setIsDragging(false);
-            (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-          }}
-          onPointerCancel={() => setIsDragging(false)}
-        >
-          <svg className="h-4 w-4 shrink-0 opacity-80" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-            <path d="M7 4a1 1 0 100-2 1 1 0 000 2zm6-1a1 1 0 11-2 0 1 1 0 012 0zM7 11a1 1 0 100-2 1 1 0 000 2zm6-1a1 1 0 11-2 0 1 1 0 012 0zM7 18a1 1 0 100-2 1 1 0 000 2zm6-1a1 1 0 11-2 0 1 1 0 012 0z" />
-          </svg>
-          <span className="text-[10px] font-medium uppercase tracking-wide">Drag to move</span>
-        </div>
-
         <label className="sr-only" htmlFor="event-image-caption-on-image">
           Image caption text
         </label>
@@ -132,7 +125,8 @@ const EventImageCaptionOverlay = ({
               })
             )
           }
-          className="min-h-0 flex-1 w-full resize-none border-0 bg-transparent px-3 py-2 text-center placeholder:text-white/55 focus:outline-none focus:ring-0 overflow-auto"
+          onPointerDown={(e) => e.stopPropagation()}
+          className="min-h-0 flex-1 w-full cursor-text resize-none border-0 bg-transparent px-2 py-1.5 text-center placeholder:text-white/55 focus:outline-none focus:ring-0 overflow-auto"
           style={{
             ...textStyle,
             textShadow: legibilityShadow,

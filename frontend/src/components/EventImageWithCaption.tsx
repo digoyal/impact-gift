@@ -71,7 +71,7 @@ const EventImageWithCaption = ({
         <div className="space-y-2">
           {captionOn && (
             <p className="text-xs text-gray-500">
-              Type in the box on the image, drag the top bar to move, pull the bottom-right corner to resize.
+              Type in the box on the image, drag the border or padding to move, pull the bottom-right corner to resize.
             </p>
           )}
           <div
