@@ -141,8 +141,8 @@ const EventDetailsForm = ({
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="min-w-0 sm:col-span-1">
           <label htmlFor="venue_name" className={LABEL_CLASS}>
             Venue Name *
           </label>
@@ -161,7 +161,7 @@ const EventDetailsForm = ({
           />
         </div>
 
-        <div>
+        <div className="min-w-0 sm:col-span-2">
           <label htmlFor="address" className={LABEL_CLASS}>
             Address (Optional)
           </label>
