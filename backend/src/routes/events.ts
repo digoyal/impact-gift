@@ -9,6 +9,14 @@ import { insertCreatorAsAttendingGuest } from '../utils/hostGuest';
 
 const router = Router();
 
+/** Treat blank strings as null so COALESCE/Postgres date-time columns do not error. */
+function emptyToNull<T>(value: T): T | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  return value;
+}
+
 router.post(
   '/',
   authenticate,
@@ -517,9 +525,9 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
       start_date,
       end_date,
       start_time,
-      end_time,
-      venue_name,
-      address,
+        endTime,
+        venue_name,
+        addressValue,
       host_name,
       host_phone,
       cohosts_enabled,
@@ -549,6 +557,10 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
         ? cohost_phone.trim()
         : null
       : undefined;
+
+    const rsvpDeadline = emptyToNull(rsvp_deadline);
+    const endTime = emptyToNull(end_time);
+    const addressValue = emptyToNull(address);
 
     // Check if identifier is a slug or ID
     const isSlug = isNaN(Number(identifier));
@@ -605,15 +617,15 @@ router.put('/:identifier', authenticate, async (req: AuthRequest, res: Response)
         start_date,
         end_date,
         start_time,
-        end_time,
+        endTime,
         venue_name,
-        address,
+        addressValue,
         host_name,
         host_phone,
         hasCohostsEnabled ? cohostsEnabled : null,
         cohostNameForDb ?? null,
         cohostPhoneForDb ?? null,
-        rsvp_deadline,
+        rsvpDeadline,
         goal_amount,
         is_active,
         show_guest_list,
