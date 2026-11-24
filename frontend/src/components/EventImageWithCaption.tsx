@@ -40,19 +40,10 @@ const EventImageWithCaption = ({
     onCaptionChange(applyCaptionDefaults({ ...workingCaption, ...patch }));
   };
 
+  const captionOn = workingCaption.enabled;
+
   return (
     <div className="space-y-3">
-      {editable && (
-        <label className="flex min-h-[40px] cursor-pointer items-center gap-2 text-sm font-semibold text-gray-700">
-          <input
-            type="checkbox"
-            className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-            checked={workingCaption.enabled}
-            onChange={(e) => patchCaption({ enabled: e.target.checked })}
-          />
-          Caption
-        </label>
-      )}
       <div className={previewClassName}>
         <img src={imageUrl} alt={alt} className={imageClassName} />
         <EventImageCaptionOverlay
@@ -63,16 +54,39 @@ const EventImageWithCaption = ({
         {topRightActions}
       </div>
 
-      {editable && workingCaption.enabled && (
+      {editable && (
         <div className="space-y-2">
-          <p className="text-xs text-gray-500">
-            Type in the box on the image, drag the top bar to move, pull the bottom-right corner to resize.
-          </p>
+          {captionOn && (
+            <p className="text-xs text-gray-500">
+              Type in the box on the image, drag the top bar to move, pull the bottom-right corner to resize.
+            </p>
+          )}
           <div
             className="flex flex-wrap items-end gap-3 sm:flex-nowrap sm:gap-4"
             role="toolbar"
-            aria-label="Caption text style"
+            aria-label="Caption controls"
           >
+            <div className="shrink-0 w-auto">
+              <span id="event-image-caption-enabled-label" className={LABEL_CLASS}>
+                Caption
+              </span>
+              <label
+                htmlFor="event-image-caption-enabled"
+                className="flex min-h-[40px] cursor-pointer items-center gap-2 pt-0.5"
+              >
+                <input
+                  id="event-image-caption-enabled"
+                  type="checkbox"
+                  aria-labelledby="event-image-caption-enabled-label"
+                  className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  checked={captionOn}
+                  onChange={(e) => patchCaption({ enabled: e.target.checked })}
+                />
+              </label>
+            </div>
+
+            {captionOn && (
+              <>
             <div className="min-w-0 w-full basis-full sm:basis-auto sm:flex-1 sm:max-w-[11rem]">
               <label htmlFor="event-image-caption-font" className={LABEL_CLASS}>
                 Font
@@ -153,6 +167,8 @@ const EventImageWithCaption = ({
                 I
               </button>
             </div>
+              </>
+            )}
           </div>
         </div>
       )}
