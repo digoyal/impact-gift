@@ -50,7 +50,6 @@ const EventDetailsForm = ({
     };
 
   const cohostsOn = formData.cohosts_enabled;
-  const cohostFieldsMuted = !cohostsOn;
 
   const titleField = (
     <div>
@@ -182,8 +181,8 @@ const EventDetailsForm = ({
         </div>
       </div>
 
-      <div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <div className="min-w-0">
             <label htmlFor="host_name" className={LABEL_CLASS}>
               Host Name *
@@ -213,61 +212,67 @@ const EventDetailsForm = ({
               onChange={handleChange('host_phone')}
             />
           </div>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <label
-          htmlFor="cohosts_enabled"
-          className="flex min-h-[40px] cursor-pointer items-center gap-2"
-        >
-          <input
-            id="cohosts_enabled"
-            type="checkbox"
-            className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-            checked={cohostsOn}
-            onChange={(e) => onFormDataChange({ ...formData, cohosts_enabled: e.target.checked })}
-          />
-          <span className={LABEL_CLASS + ' mb-0'}>Co-Hosts</span>
-        </label>
-
-        <div
-          className={`grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 ${
-            cohostFieldsMuted ? 'opacity-50' : ''
-          }`}
-        >
-          <div className="min-w-0">
-            <label htmlFor="cohost_name" className={LABEL_CLASS}>
-              Co-Host Name{cohostsOn ? ' *' : ''}
-            </label>
-            <input
-              id="cohost_name"
-              type="text"
-              disabled={cohostFieldsMuted}
-              required={cohostsOn}
-              className={`input ${cohostFieldsMuted ? 'cursor-not-allowed text-gray-500' : ''}`}
-              placeholder="Co-host name"
-              value={formData.cohost_name}
-              onChange={handleChange('cohost_name')}
-            />
-          </div>
 
           <div className="min-w-0">
-            <label htmlFor="cohost_phone" className={LABEL_CLASS}>
-              Co-Host Phone{cohostsOn ? ' *' : ''}
+            <span id="cohosts_enabled_label" className={LABEL_CLASS}>
+              Co-Hosts
+            </span>
+            <label
+              htmlFor="cohosts_enabled"
+              className="flex min-h-[40px] cursor-pointer items-center gap-2"
+            >
+              <input
+                id="cohosts_enabled"
+                type="checkbox"
+                aria-labelledby="cohosts_enabled_label"
+                className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                checked={cohostsOn}
+                onChange={(e) => {
+                  const enabled = e.target.checked;
+                  onFormDataChange({
+                    ...formData,
+                    cohosts_enabled: enabled,
+                    ...(enabled ? {} : { cohost_name: '', cohost_phone: '' }),
+                  });
+                }}
+              />
             </label>
-            <input
-              id="cohost_phone"
-              type="tel"
-              disabled={cohostFieldsMuted}
-              required={cohostsOn}
-              className={`input ${cohostFieldsMuted ? 'cursor-not-allowed text-gray-500' : ''}`}
-              placeholder="(555) 123-4567"
-              value={formData.cohost_phone}
-              onChange={handleChange('cohost_phone')}
-            />
           </div>
         </div>
+
+        {cohostsOn && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="min-w-0">
+              <label htmlFor="cohost_name" className={LABEL_CLASS}>
+                Co-Host Name *
+              </label>
+              <input
+                id="cohost_name"
+                type="text"
+                required
+                className="input"
+                placeholder="Co-host name"
+                value={formData.cohost_name}
+                onChange={handleChange('cohost_name')}
+              />
+            </div>
+
+            <div className="min-w-0">
+              <label htmlFor="cohost_phone" className={LABEL_CLASS}>
+                Co-Host Phone *
+              </label>
+              <input
+                id="cohost_phone"
+                type="tel"
+                required
+                className="input"
+                placeholder="(555) 123-4567"
+                value={formData.cohost_phone}
+                onChange={handleChange('cohost_phone')}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
