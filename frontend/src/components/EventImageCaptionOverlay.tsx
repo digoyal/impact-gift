@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   applyCaptionDefaults,
+  isCaptionDisplayed,
   type EventImageCaption,
   eventImageCaptionTextStyle,
 } from '../utils/eventImageCaption';
@@ -57,7 +58,11 @@ const EventImageCaptionOverlay = ({
     transform: 'translate(-50%, -50%)',
   };
 
-  if (!editable && !layout.text.trim()) {
+  if (editable && !layout.enabled) {
+    return <div ref={containerRef} className="absolute inset-0" aria-hidden />;
+  }
+
+  if (!editable && !isCaptionDisplayed(layout)) {
     return <div ref={containerRef} className="absolute inset-0 pointer-events-none" aria-hidden />;
   }
 

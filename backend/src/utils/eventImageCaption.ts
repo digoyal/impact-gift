@@ -11,6 +11,7 @@ export interface EventImageCaption {
   color?: string;
   bold?: boolean;
   italic?: boolean;
+  enabled?: boolean;
 }
 
 const FONT_FAMILIES: EventImageCaptionFontFamily[] = ['system', 'sans', 'serif', 'script'];
@@ -52,6 +53,11 @@ function applyCaptionLayoutDefaults(caption: EventImageCaption): EventImageCapti
   };
 }
 
+function resolveCaptionEnabled(caption: Pick<EventImageCaption, 'enabled' | 'text'>): boolean {
+  if (typeof caption.enabled === 'boolean') return caption.enabled;
+  return Boolean(caption.text?.trim());
+}
+
 function applyCaptionDefaults(caption: EventImageCaption): EventImageCaption {
   const withLayout = applyCaptionLayoutDefaults(caption);
   return {
@@ -59,6 +65,7 @@ function applyCaptionDefaults(caption: EventImageCaption): EventImageCaption {
     color: normalizeCaptionColor(caption.color),
     bold: Boolean(caption.bold),
     italic: Boolean(caption.italic),
+    enabled: resolveCaptionEnabled(caption),
   };
 }
 
@@ -74,8 +81,10 @@ export function normalizeEventImageCaption(raw: unknown): EventImageCaption | nu
   if (typeof raw !== 'object') return null;
 
   const o = raw as Record<string, unknown>;
-  const text = typeof o.text === 'string' ? o.text.trim() : '';
-  if (!text) return null;
+  const text = typeof o.text === 'string' ? o.text : '';
+  const textTrimmed = text.trim();
+  const hasEnabledFlag = typeof o.enabled === 'boolean';
+  if (!textTrimmed && !hasEnabledFlag) return null;
 
   const fontFamily = FONT_FAMILIES.includes(o.fontFamily as EventImageCaptionFontFamily)
     ? (o.fontFamily as EventImageCaptionFontFamily)
@@ -90,15 +99,16 @@ export function normalizeEventImageCaption(raw: unknown): EventImageCaption | nu
   const yPercent = typeof o.yPercent === 'number' ? clampPercent(o.yPercent) : 72;
 
   return applyCaptionDefaults({
-    text,
+    text: textTrimmed || text,
     xPercent,
     yPercent,
     widthPercent: typeof o.widthPercent === 'number' ? o.widthPercent : undefined,
     heightPercent: typeof o.heightPercent === 'number' ? o.heightPercent : undefined,
     fontFamily,
     fontSizePx,
-    color: o.color,
+    color: typeof o.color === 'string' ? o.color : undefined,
     bold: o.bold === true,
     italic: o.italic === true,
+    enabled: hasEnabledFlag ? o.enabled === true : undefined,
   });
 }

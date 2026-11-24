@@ -14,6 +14,8 @@ export interface EventImageCaption {
   color?: string;
   bold?: boolean;
   italic?: boolean;
+  /** When false, caption is stored but not shown on the public page or in the edit overlay. */
+  enabled?: boolean;
 }
 
 export const DEFAULT_CAPTION_COLOR = '#ffffff';
@@ -62,7 +64,20 @@ export const DEFAULT_EVENT_IMAGE_CAPTION: EventImageCaption = {
   color: DEFAULT_CAPTION_COLOR,
   bold: false,
   italic: false,
+  enabled: false,
 };
+
+/** Legacy captions without `enabled`: on when text is non-empty, otherwise off. */
+export function resolveCaptionEnabled(caption: Pick<EventImageCaption, 'enabled' | 'text'>): boolean {
+  if (typeof caption.enabled === 'boolean') return caption.enabled;
+  return Boolean(caption.text?.trim());
+}
+
+export function isCaptionDisplayed(caption: EventImageCaption | null | undefined): boolean {
+  if (!caption) return false;
+  const c = applyCaptionDefaults(caption);
+  return resolveCaptionEnabled(c) && Boolean(c.text.trim());
+}
 
 function clampPercent(n: number): number {
   return Math.min(100, Math.max(0, n));
@@ -102,6 +117,7 @@ export function applyCaptionDefaults(caption: EventImageCaption): EventImageCapt
     color: normalizeCaptionColor(caption.color),
     bold: Boolean(caption.bold),
     italic: Boolean(caption.italic),
+    enabled: resolveCaptionEnabled(caption),
   };
 }
 
@@ -137,7 +153,8 @@ export function parseEventImageCaption(raw: unknown): EventImageCaption | null {
 
   const o = raw as Record<string, unknown>;
   const text = typeof o.text === 'string' ? o.text : '';
-  if (!text.trim()) return null;
+  const hasEnabledFlag = typeof o.enabled === 'boolean';
+  if (!text.trim() && !hasEnabledFlag) return null;
 
   const fontFamily = EVENT_IMAGE_CAPTION_FONT_OPTIONS.some((f) => f.value === o.fontFamily)
     ? (o.fontFamily as EventImageCaptionFontFamily)
@@ -159,17 +176,21 @@ export function parseEventImageCaption(raw: unknown): EventImageCaption | null {
     color: typeof o.color === 'string' ? o.color : undefined,
     bold: o.bold === true,
     italic: o.italic === true,
+    enabled: hasEnabledFlag ? o.enabled === true : undefined,
   });
 }
 
 export function captionForApi(caption: EventImageCaption | null | undefined): EventImageCaption | null {
-  if (!caption?.text?.trim()) return null;
+  if (!caption) return null;
   const normalized = applyCaptionDefaults(caption);
+  const text = caption.text?.trim() ?? '';
+  if (!text && !normalized.enabled) return null;
   return {
     ...normalized,
-    text: caption.text.trim(),
+    text: text || caption.text || '',
     xPercent: clampPercent(normalized.xPercent),
     yPercent: clampPercent(normalized.yPercent),
+    enabled: normalized.enabled,
   };
 }
 

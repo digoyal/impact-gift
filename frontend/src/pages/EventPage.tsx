@@ -16,7 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAxiosError, getErrorMessage } from '../utils/errors';
 import { resolveMediaUrl } from '../utils/mediaUrl';
 import EventImageCaptionOverlay from '../components/EventImageCaptionOverlay';
-import { parseEventImageCaption } from '../utils/eventImageCaption';
+import { isCaptionDisplayed, parseEventImageCaption } from '../utils/eventImageCaption';
 
 const EventPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -182,7 +182,7 @@ const EventPage = () => {
             className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/15"
             aria-hidden
           />
-          {heroCaption && (
+          {heroCaption && isCaptionDisplayed(heroCaption) && (
             <div className="absolute inset-0 z-[1]">
               <EventImageCaptionOverlay caption={heroCaption} />
             </div>

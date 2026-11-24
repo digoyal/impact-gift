@@ -42,6 +42,17 @@ const EventImageWithCaption = ({
 
   return (
     <div className="space-y-3">
+      {editable && (
+        <label className="flex min-h-[40px] cursor-pointer items-center gap-2 text-sm font-semibold text-gray-700">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+            checked={workingCaption.enabled}
+            onChange={(e) => patchCaption({ enabled: e.target.checked })}
+          />
+          Caption
+        </label>
+      )}
       <div className={previewClassName}>
         <img src={imageUrl} alt={alt} className={imageClassName} />
         <EventImageCaptionOverlay
@@ -52,7 +63,7 @@ const EventImageWithCaption = ({
         {topRightActions}
       </div>
 
-      {editable && (
+      {editable && workingCaption.enabled && (
         <div className="space-y-2">
           <p className="text-xs text-gray-500">
             Type in the box on the image, drag the top bar to move, pull the bottom-right corner to resize.
